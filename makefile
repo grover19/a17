@@ -5,6 +5,9 @@ API_DIR = server
 DB_DIR = data
 REQ_DIR = .
 
+PYTHONPATH = $(shell pwd)
+PYTESTFLAGS = -vv --verbose --cov-branch --cov-report term-missing --tb=short -W ignore::FutureWarning
+
 FORCE:
 
 prod: all_tests github
@@ -14,8 +17,8 @@ github: FORCE
 	git push origin master
 
 all_tests: FORCE
-	cd $(API_DIR); make tests
-	cd $(DB_DIR); make tests
+	PYTHONPATH=$(PYTHONPATH) $(MAKE) -C $(API_DIR) tests
+	PYTHONPATH=$(PYTHONPATH) $(MAKE) -C $(DB_DIR) tests
 
 dev_env: FORCE
 	pip install -r $(REQ_DIR)/requirements-dev.txt
