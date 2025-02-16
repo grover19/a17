@@ -44,7 +44,7 @@ class HelloWorld(Resource):
         """
         A trivial endpoint to see if the server is running.
         """
-        return {HELLO_RESP: 'world'}
+        return {HELLO_RESP: HELLO_RESP}
 
 
 @api.route(ENDPOINT_EP)
@@ -151,11 +151,13 @@ class PeopleCreate(Resource):
         Add a person.
         """
         try:
+            print('im here :) ')
             name = request.json.get(ppl.NAME)
             affiliation = request.json.get(ppl.AFFILIATION)
             email = request.json.get(ppl.EMAIL)
             role = request.json.get(ppl.ROLES)
             ret = ppl.create(name, affiliation, email, role)
+            print('rhifwe')
         except Exception as err:
             raise wz.NotAcceptable(f'Could not add person: '
                                    f'{err=}')
