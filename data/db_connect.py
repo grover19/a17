@@ -27,15 +27,53 @@ def connect_db():
     global client
     if client is None:  # not connected yet!
         print('Setting client because it is None.')
+
+        # 1. Open the terminal and navigate to your repository directory.
+                # this is not necessary, but do the whole make dev_env and export PYTHONPATH thing 
+                # i too was having errors because it was temporary set [
+                # LITTERALLY WTF, IM GONNA CRY SHIT IS SO DUMB AND COMPLICATED FOR NO REASON]
+        # 2. Run the command: export MONGO_PASSWD='designprojecta17'
+        # 3. Run the command: echo $MONGO_PASSWD to verify the password is set correctly.
+        # 4. Run the command: export CLOUD_MONGO=1 to set MongoDB to cloud mode.
+        # run ./local.sh
+
+        # to confirm you're connected, go to the server thing, the PUT /people/create endpoint 
+        # and try to add someone 
+        # when you're adding someone, have your JSON thing look like this 
+        # (CHANGE THE NAME BEFORE U ADD IT, BECAUSE I ALREADY ADDED THIS )
+        # {
+            #   "name": "Tinos",
+            #   "email": "tinos@gmail.com",
+            #   "affiliation": "string",
+            #   "roles": "AU"
+            # }
+        # the email is important, I think the code checks if there's a @gmail.com 
+        # the roles is also important, it only accepts one of these ['AU', 'ED', 'ME', 'CE']
+            # go and checkout people.py (/data/people.py)  
+            # go and checkout roles.py (/data/roles.py)
+
+
+            # ALSOO!!! in my mongodb ATLAS thing, I had to put in my computer's IP address 
+            # so it's possible that it won't let you guys do anything because I would have to
+            # register each of your local machine's IP address. So, yee 
+
+
+
         if os.environ.get('CLOUD_MONGO', LOCAL) == CLOUD:
             password = os.environ.get('MONGO_PASSWD')
             if not password:
                 raise ValueError('You must set your password '
                                  + 'to use Mongo in the cloud.')
             print('Connecting to Mongo in the cloud.')
-            client = pm.MongoClient(f'mongodb+srv://gcallah:{password}'
-                                    + '@koukoumongo1.yud9b.mongodb.net/'
-                                    + '?retryWrites=true&w=majority')
+            # client = pm.MongoClient(f'mongodb+srv://gcallah:{password}'
+            #                         + '@koukoumongo1.yud9b.mongodb.net/'
+            #                         + '?retryWrites=true&w=majority')
+
+            client = pm.MongoClient(f"mongodb+srv://a17:{password}"
+                                    + "@a17.rsb43.mongodb.net/"
+                                    + "?retryWrites=true&w=majority"
+                                    + "&appName=a17")
+            
         else:
             print("Connecting to Mongo locally.")
             client = pm.MongoClient()

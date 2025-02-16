@@ -65,9 +65,11 @@ def is_valid_person(name: str, affiliation: str, email: str,
                     role: str = None, roles: list = None) -> bool:
     if not is_valid_email(email):
         raise ValueError(f'Invalid email: {email}')
+
     if role:
         if not rls.is_valid(role):
             raise ValueError(f'Invalid role: {role}')
+        
     elif roles:
         for role in roles:
             if not rls.is_valid(role):
@@ -79,12 +81,12 @@ def create(name: str, affiliation: str, email: str, role: str):
     if exists(email):
         raise ValueError(f'Adding duplicate {email=}')
     if is_valid_person(name, affiliation, email, role=role):
+        # im not even getting to this point 
         roles = []
         if role:
             roles.append(role)
         person = {NAME: name, AFFILIATION: affiliation,
                   EMAIL: email, ROLES: roles}
-        print(person)
         dbc.create(PEOPLE_COLLECT, person)
         return email
 
