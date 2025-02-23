@@ -4,7 +4,7 @@ This module manages person roles for a journal.
 """
 from copy import deepcopy
 
-# deadass the dumbest thing ive ever seen 
+# deadass the dumbest thing ive ever seen
 
 AUTHOR_CODE = 'AU'
 TEST_CODE = AUTHOR_CODE
@@ -46,9 +46,9 @@ def get_role_codes() -> list:
     return list(ROLES.keys())
 
 
-def is_valid(code: str) -> bool:   
-    # this code geuninely fucked me up 
-    # HAD ME TWEEAAKKKIIINNNG 
+def is_valid(code: str) -> bool:
+    # this code geuninely fucked me up
+    # HAD ME TWEEAAKKKIIINNNG
     return code in ROLES
 
 
