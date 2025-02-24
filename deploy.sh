@@ -1,13 +1,14 @@
 #!/bin/bash
 # This shell script deploys a new version to a server.
 
-PROJ_DIR=demo-repo4
-VENV=Fall2023
-PA_DOMAIN="Fall2023.pythonanywhere.com"
-PA_USER='Fall2023'
+PROJ_DIR=a17
+VENV=venv
+PA_DOMAIN="tinostinostinos.pythonanywhere.com"
+PA_USER='Tinostinostinos'
 echo "Project dir = $PROJ_DIR"
 echo "PA domain = $PA_DOMAIN"
 echo "Virtual env = $VENV"
+echo "PA password = $DEMO_PA_PWD"
 
 if [ -z "$DEMO_PA_PWD" ]
 then
