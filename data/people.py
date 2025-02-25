@@ -8,6 +8,7 @@ import data.roles as rls
 
 PEOPLE_COLLECT = 'people'
 
+# test commit message
 MIN_USER_NAME_LEN = 2
 # fields
 NAME = 'name'
