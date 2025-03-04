@@ -12,7 +12,7 @@ import werkzeug.exceptions as wz
 
 import data.people as ppl
 import data.text as txt
-import data.manuscripts as mss
+# import data.manuscripts as mss
 
 app = Flask(__name__)
 CORS(app)
@@ -38,8 +38,6 @@ TITLE_RESP = 'Title'
 # EP and RESP for text endpoints:
 TEXT_DELETE_EP = '/text/delete'
 TEXT_DELETE_RESP = 'Text Deleted'
-
-
 
 
 @api.route(HELLO_EP)
@@ -187,21 +185,23 @@ class Masthead(Resource):
         return {MASTHEAD: ppl.get_masthead()}
 
 
-
 # Fields for text; endpoints for text
 
 TEXT_FIELDS = api.model('NewTextEntry', {
-    txt.KEY: fields.string,
-    txt.TITLE: fields.string,
-    txt.TEXT: fields.string,
-    txt.EMAIL: fields.string
+    txt.KEY: fields.String,
+    txt.TITLE: fields.String,
+    txt.TEXT: fields.String,
 })
 
-@api.route(f'{TEXT_DELETE_EP}/delete')
+
+@api.route(f'{TEXT_DELETE_EP}/<string:key>')
 class TextDelete(Resource):
     @api.response(HTTPStatus.OK, 'Success')
     @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
     @api.expect(TEXT_FIELDS)
     def delete(self, key):
-        pass
-
+        ret = txt.delete(key)
+        if ret is not None:
+            return {'Deleted': ret}
+        else:
+            raise wz.NotFound(f'No such person: {key}')

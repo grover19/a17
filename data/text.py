@@ -36,7 +36,7 @@ def create():
     pass
 
 
-def delete(dict_key):
+def delete(dict_key: str):
     print(f'{KEY=}, {dict_key=}')
     return dbc.delete(TEXT_COLLECT, {KEY: dict_key})
 
