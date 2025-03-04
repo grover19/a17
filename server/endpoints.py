@@ -38,6 +38,7 @@ TITLE_RESP = 'Title'
 # EP and RESP for text endpoints:
 TEXT_DELETE_EP = '/text/delete'
 TEXT_DELETE_RESP = 'Text Deleted'
+TEXT_CREATE_EP = '/text/create'
 
 
 @api.route(HELLO_EP)
@@ -233,6 +234,44 @@ class TextOneResource(Resource):
             return entry, HTTPStatus.OK
         else:
             raise wz.NotFound(f'No text entry found for key: {key}')
+
+
+@api.route(TEXT_CREATE_EP)
+class TextCreate(Resource):
+    """
+    Endpoint to create a new text entry.
+    """
+    @api.response(HTTPStatus.OK, 'Text created successfully')
+    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
+    @api.expect(TEXT_FIELDS)
+    def post(self):
+        data = request.get_json()
+        key = data.get(txt.KEY)
+        title = data.get(txt.TITLE)
+        text_content = data.get(txt.TEXT)
+        if not key or not title or not text_content:
+            return {"error": "Missing required fields: key, title, and text"}, HTTPStatus.BAD_REQUEST
+
+        try:
+            # Call the text module's create function to insert into MongoDB.
+            txt.create(key, title, text_content)
+            return {"message": "Text created successfully", "key": key}, HTTPStatus.OK
+        except KeyError as e:
+            # This error indicates the key already exists.
+            return {"error": str(e)}, HTTPStatus.NOT_ACCEPTABLE
+        except Exception as e:
+            return {"error": f"Could not create text entry: {e}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+@api.route(f'{TEXT_DELETE_EP}/<string:key>')
+class TextDelete(Resource):
+    @api.response(HTTPStatus.OK, 'Success')
+    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
+    @api.expect(TEXT_FIELDS)
+    def delete(self, key):
+        ret = txt.delete(key)
+        if ret is not None:
+            return {'Deleted': ret}
+        else:
+            raise wz.NotFound(f'No such person: {key}')
 
 
 @api.route(f'{TEXT_DELETE_EP}/<string:key>')
