@@ -11,6 +11,8 @@ from flask_cors import CORS
 import werkzeug.exceptions as wz
 
 import data.people as ppl
+import data.text as txt
+import data.manuscripts as mss
 
 app = Flask(__name__)
 CORS(app)
@@ -32,6 +34,12 @@ RETURN = 'return'
 TITLE = 'The Journal of API Technology'
 TITLE_EP = '/title'
 TITLE_RESP = 'Title'
+
+# EP and RESP for text endpoints:
+TEXT_DELETE_EP = '/text/delete'
+TEXT_DELETE_RESP = 'Text Deleted'
+
+
 
 
 @api.route(HELLO_EP)
@@ -177,3 +185,23 @@ class Masthead(Resource):
     """
     def get(self):
         return {MASTHEAD: ppl.get_masthead()}
+
+
+
+# Fields for text; endpoints for text
+
+TEXT_FIELDS = api.model('NewTextEntry', {
+    txt.KEY: fields.string,
+    txt.TITLE: fields.string,
+    txt.TEXT: fields.string,
+    txt.EMAIL: fields.string
+})
+
+@api.route(f'{TEXT_DELETE_EP}/delete')
+class TextDelete(Resource):
+    @api.response(HTTPStatus.OK, 'Success')
+    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
+    @api.expect(TEXT_FIELDS)
+    def delete(self, key):
+        pass
+

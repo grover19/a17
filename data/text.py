@@ -2,11 +2,15 @@
 This module interfaces to our user data.
 """
 
+import data.db_connect as dbc
+
 # fields
 KEY = 'key'
 TITLE = 'title'
 TEXT = 'text'
 EMAIL = 'email'
+
+TEXT_COLLECT = 'text'
 
 TEST_KEY = 'HomePage'
 SUBM_KEY = 'SubmissionsPage'
@@ -32,8 +36,9 @@ def create():
     pass
 
 
-def delete():
-    pass
+def delete(dict_key):
+    print(f'{KEY=}, {dict_key=}')
+    return dbc.delete(TEXT_COLLECT, {KEY: dict_key})
 
 
 def update():
