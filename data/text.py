@@ -32,8 +32,19 @@ text_dict = {
 }
 
 
-def create():
-    pass
+def create(key: str, title: str, text: str): 
+    # Check if an entry with this key already exists in the database.
+    if dbc.read_one(TEXT_COLLECT, {KEY: key}):
+        raise KeyError(f"Key '{key}' already exists in the database.")
+    
+    # Build the document following our schema.
+    document = {KEY: key, TITLE: title, TEXT: text}
+    
+    # Insert the document into the collection.
+    dbc.create(TEXT_COLLECT, document)
+    return True
+
+
 
 
 def delete(dict_key: str):
@@ -45,30 +56,33 @@ def update():
     pass
 
 
-def read() -> dict:
+def read():
     """
     Our contract:
         - No arguments.
-        - Returns a dictionary of text entries keyed on their key.
-        - Each key must map to another dictionary containing title and text.
+        - Returns a dictionary of users keyed on user email.
+        - Each user email must be the key for another dictionary.
     """
-    text_entries = dbc.read_dict(TEXT_COLLECTION, KEY)  # Fetch from MongoDB
-    if not text_entries:
-        text_entries = text_dict  # Fallback to default dictionary
-    print(f'{text_entries=}')  # Debug log
-    return text_entries
+    text = text_dict
+    return text
+
 
 def read_one(key: str) -> dict:
-    """
-    Retrieve a single text entry based on the given key.
-    If not found, return an empty dictionary.
-    """
-    result = dbc.read_one(TEXT_COLLECTION, {KEY: key})  # Fetch from MongoDB
-    if result:
-        return result
-    return {}
+    # This should take a key and return the page dictionary
+    # for that key. Return an empty dictionary of key not found.
+    result = {}
+    if key in text_dict:
+        result = text_dict[key]
+    return result
 
 
+def main():
+    print(read())
+
+
+if __name__ == '__main__':
+    main()
+    
 def main():
     print(read())
 

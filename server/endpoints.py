@@ -37,6 +37,7 @@ TITLE_RESP = 'Title'
 
 # EP and RESP for text endpoints:
 TEXT_DELETE_EP = '/text/delete'
+TEXT_CREATE_EP = '/text/create'
 TEXT_DELETE_RESP = 'Text Deleted'
 
 
@@ -154,7 +155,7 @@ class PeopleCreate(Resource):
     @api.expect(PEOPLE_CREATE_FLDS)
     def put(self):
         """
-        Add a person
+        Add a person.
         """
         try:
             print('im here :) ')
@@ -171,20 +172,6 @@ class PeopleCreate(Resource):
             MESSAGE: 'Person added!',
             RETURN: ret,
         }
-    
-    
-@api.route('/manuscripts')
-class ManuscriptResource(Resource):
-    """
-    This class handles retrieving all manuscript entries.
-    """
-    def get(self):
-        """
-        Retrieve all manuscript entries.
-        """
-        # Placeholder: Will implement fetching manuscript entries from DB
-        return {}, HTTPStatus.OK  # Will return actual manuscript data in the future
-    
 
 
 MASTHEAD = 'Masthead'
@@ -207,34 +194,32 @@ TEXT_FIELDS = api.model('NewTextEntry', {
     txt.TEXT: fields.String,
 })
 
-@api.route(TEXT_EP)
-class TextResource(Resource):
-    """
-    This class handles retrieving all text entries.
-    """
-    def get(self):
-        """
-        Retrieve all text entries.
-        """
-        return txt.read(), HTTPStatus.OK
 
-
-@api.route(TEXT_ONE_EP)
-class TextOneResource(Resource):
+@api.route(TEXT_CREATE_EP)
+class TextCreate(Resource):
     """
-    This class handles retrieving a single text entry.
+    Endpoint to create a new text entry.
     """
-    def get(self, key):
-        """
-        Retrieve a single text entry by key.
-        """
-        entry = txt.read_one(key)
-        if entry:
-            return entry, HTTPStatus.OK
-        else:
-            raise wz.NotFound(f'No text entry found for key: {key}')
+    @api.response(HTTPStatus.OK, 'Text created successfully')
+    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
+    @api.expect(TEXT_FIELDS)
+    def post(self):
+        data = request.get_json()
+        key = data.get(txt.KEY)
+        title = data.get(txt.TITLE)
+        text_content = data.get(txt.TEXT)
+        if not key or not title or not text_content:
+            return {"error": "Missing required fields: key, title, and text"}, HTTPStatus.BAD_REQUEST
 
-
+        try:
+            # Call the text module's create function to insert into MongoDB.
+            txt.create(key, title, text_content)
+            return {"message": "Text created successfully", "key": key}, HTTPStatus.OK
+        except KeyError as e:
+            # This error indicates the key already exists.
+            return {"error": str(e)}, HTTPStatus.NOT_ACCEPTABLE
+        except Exception as e:
+            return {"error": f"Could not create text entry: {e}"}, HTTPStatus.INTERNAL_SERVER_ERROR
 @api.route(f'{TEXT_DELETE_EP}/<string:key>')
 class TextDelete(Resource):
     @api.response(HTTPStatus.OK, 'Success')
