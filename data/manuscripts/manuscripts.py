@@ -1,11 +1,12 @@
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 # this is because db_connect.py is located one directory above 
 # yes, you could also just do ../data 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+hey = sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+print(hey)
 import data.db_connect as dbc
 
 # Collection names for the normalized data
@@ -52,8 +53,9 @@ def create_manuscript(title, author, author_email, text, abstract):
      - Insert an initial revision.
      - Insert an initial history record.
    """
-   client, db = dbc()
-   now = datetime.now(datetime.timezone.utc)
+   client = dbc.connect_db()
+   db = client[dbc.SE_DB]
+   now = datetime.now(timezone.utc)
 
    # Set the initial state as "Submitted"
    manuscript_doc = {
