@@ -193,6 +193,33 @@ TEXT_FIELDS = api.model('NewTextEntry', {
     txt.TEXT: fields.String,
 })
 
+@api.route(TEXT_EP)
+class TextResource(Resource):
+    """
+    This class handles retrieving all text entries.
+    """
+    def get(self):
+        """
+        Retrieve all text entries.
+        """
+        return txt.read(), HTTPStatus.OK
+
+
+@api.route(TEXT_ONE_EP)
+class TextOneResource(Resource):
+    """
+    This class handles retrieving a single text entry.
+    """
+    def get(self, key):
+        """
+        Retrieve a single text entry by key.
+        """
+        entry = txt.read_one(key)
+        if entry:
+            return entry, HTTPStatus.OK
+        else:
+            raise wz.NotFound(f'No text entry found for key: {key}')
+
 
 @api.route(f'{TEXT_DELETE_EP}/<string:key>')
 class TextDelete(Resource):
