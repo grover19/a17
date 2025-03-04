@@ -1,5 +1,5 @@
 """
-This is the file containing all of the endpoints for our Flask app.
+This is the file containing all of the endpoints for our flask app.
 The endpoint called `endpoints` will return all available endpoints.
 """
 from http import HTTPStatus
@@ -11,7 +11,8 @@ from flask_cors import CORS
 import werkzeug.exceptions as wz
 
 import data.people as ppl
-import data.text as txt  # Import text module for read()
+import data.text as txt
+# import data.manuscripts as mss
 
 app = Flask(__name__)
 CORS(app)
@@ -27,8 +28,6 @@ HELLO_EP = '/hello'
 HELLO_RESP = 'hello'
 MESSAGE = 'Message'
 PEOPLE_EP = '/people'
-TEXT_EP = '/text'  # Endpoint for text retrieval
-TEXT_ONE_EP = '/text/<string:key>'  # Endpoint for retrieving a single text entry
 PUBLISHER = 'Palgave'
 PUBLISHER_RESP = 'Publisher'
 RETURN = 'return'
@@ -36,7 +35,10 @@ TITLE = 'The Journal of API Technology'
 TITLE_EP = '/title'
 TITLE_RESP = 'Title'
 
-print(f"Registering endpoint: {TEXT_EP}")  # Debug log to ensure it registers
+# EP and RESP for text endpoints:
+TEXT_DELETE_EP = '/text/delete'
+TEXT_DELETE_RESP = 'Text Deleted'
+
 
 @api.route(HELLO_EP)
 class HelloWorld(Resource):
@@ -130,6 +132,67 @@ PEOPLE_CREATE_FLDS = api.model('AddNewPeopleEntry', {
 })
 
 
+# PEOPLE_CREATE_FORM = 'People Add Form'
+
+
+# @api.route(f'/{PEOPLE_EP}/{CREATE}/{FORM}')
+# class PeopleAddForm(Resource):
+#     """
+#     Form to add a new person to the journal database.
+#     """
+#     def get(self):
+#         return {PEOPLE_CREATE_FORM: pfrm.get_add_form()}
+
+
+@api.route(f'{PEOPLE_EP}/create')
+class PeopleCreate(Resource):
+    """
+    Add a person to the journal db.
+    """
+    @api.response(HTTPStatus.OK, 'Success')
+    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
+    @api.expect(PEOPLE_CREATE_FLDS)
+    def put(self):
+        """
+        Add a person.
+        """
+        try:
+            print('im here :) ')
+            name = request.json.get(ppl.NAME)
+            affiliation = request.json.get(ppl.AFFILIATION)
+            email = request.json.get(ppl.EMAIL)
+            role = request.json.get(ppl.ROLES)
+            ret = ppl.create(name, affiliation, email, role)
+            print('rhifwe')
+        except Exception as err:
+            raise wz.NotAcceptable(f'Could not add person: '
+                                   f'{err=}')
+        return {
+            MESSAGE: 'Person added!',
+            RETURN: ret,
+        }
+
+
+MASTHEAD = 'Masthead'
+
+
+@api.route(f'{PEOPLE_EP}/masthead')
+class Masthead(Resource):
+    """
+    Get a journal's masthead.
+    """
+    def get(self):
+        return {MASTHEAD: ppl.get_masthead()}
+
+
+# Fields for text; endpoints for text
+
+TEXT_FIELDS = api.model('NewTextEntry', {
+    txt.KEY: fields.String,
+    txt.TITLE: fields.String,
+    txt.TEXT: fields.String,
+})
+
 @api.route(TEXT_EP)
 class TextResource(Resource):
     """
@@ -158,13 +221,14 @@ class TextOneResource(Resource):
             raise wz.NotFound(f'No text entry found for key: {key}')
 
 
-MASTHEAD = 'Masthead'
-
-
-@api.route(f'{PEOPLE_EP}/masthead')
-class Masthead(Resource):
-    """
-    Get a journal's masthead.
-    """
-    def get(self):
-        return {MASTHEAD: ppl.get_masthead()}
+@api.route(f'{TEXT_DELETE_EP}/<string:key>')
+class TextDelete(Resource):
+    @api.response(HTTPStatus.OK, 'Success')
+    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
+    @api.expect(TEXT_FIELDS)
+    def delete(self, key):
+        ret = txt.delete(key)
+        if ret is not None:
+            return {'Deleted': ret}
+        else:
+            raise wz.NotFound(f'No such person: {key}')

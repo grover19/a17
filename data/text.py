@@ -2,13 +2,15 @@
 This module interfaces to our user data.
 """
 
-import data.db_connect as dbc  # Import database connection module
+import data.db_connect as dbc
 
-# Fields
+# fields
 KEY = 'key'
 TITLE = 'title'
 TEXT = 'text'
 EMAIL = 'email'
+
+TEXT_COLLECT = 'text'
 
 TEST_KEY = 'HomePage'
 SUBM_KEY = 'SubmissionsPage'
@@ -29,19 +31,19 @@ text_dict = {
     },
 }
 
-# Connect to MongoDB
-client = dbc.connect_db()
-db = client.get_database()
-TEXT_COLLECTION = "text"  # Ensure this matches MongoDB collection name
 
 def create():
     pass
 
-def delete():
-    pass
+
+def delete(dict_key: str):
+    print(f'{KEY=}, {dict_key=}')
+    return dbc.delete(TEXT_COLLECT, {KEY: dict_key})
+
 
 def update():
     pass
+
 
 def read() -> dict:
     """
@@ -66,8 +68,10 @@ def read_one(key: str) -> dict:
         return result
     return {}
 
+
 def main():
     print(read())
+
 
 if __name__ == '__main__':
     main()
