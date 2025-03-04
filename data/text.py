@@ -2,7 +2,9 @@
 This module interfaces to our user data.
 """
 
-# fields
+import data.db_connect as dbc  # Import database connection module
+
+# Fields
 KEY = 'key'
 TITLE = 'title'
 TEXT = 'text'
@@ -27,42 +29,45 @@ text_dict = {
     },
 }
 
+# Connect to MongoDB
+client = dbc.connect_db()
+db = client.get_database()
+TEXT_COLLECTION = "text"  # Ensure this matches MongoDB collection name
 
 def create():
     pass
 
-
 def delete():
     pass
-
 
 def update():
     pass
 
-
-def read():
+def read() -> dict:
     """
     Our contract:
         - No arguments.
-        - Returns a dictionary of users keyed on user email.
-        - Each user email must be the key for another dictionary.
+        - Returns a dictionary of text entries keyed on their key.
+        - Each key must map to another dictionary containing title and text.
     """
-    text = text_dict
-    return text
-
+    text_entries = dbc.read_dict(TEXT_COLLECTION, KEY)  # Fetch from MongoDB
+    if not text_entries:
+        text_entries = text_dict  # Fallback to default dictionary
+    print(f'{text_entries=}')  # Debug log
+    return text_entries
 
 def read_one(key: str) -> dict:
-    # This should take a key and return the page dictionary
-    # for that key. Return an empty dictionary of key not found.
-    result = {}
-    if key in text_dict:
-        result = text_dict[key]
-    return result
-
+    """
+    Retrieve a single text entry based on the given key.
+    If not found, return an empty dictionary.
+    """
+    result = dbc.read_one(TEXT_COLLECTION, {KEY: key})  # Fetch from MongoDB
+    if result:
+        return result
+    return {}
 
 def main():
     print(read())
-
 
 if __name__ == '__main__':
     main()
