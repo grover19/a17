@@ -1,3 +1,12 @@
+...............................................................................
+
+OPTION ONE: HAVE ONE SINGULAR MANUSCRIPT COLLECTION THAT CAN ACCOMODATE 
+THE MANUSCRIPT TANSITION FLOW 
+
+...............................................................................
+
+
+Manuscripts Collection 
 {
   "_id": ObjectId(...),
   "title": "A Great Paper",
@@ -32,4 +41,70 @@
     }
   },
   "editor": null
+}
+
+
+
+...............................................................................
+
+OPTION 2 : HAVE MULTIPLE MANUSCRIPT SCTURCTURE THAT CAN ACCOMODATE 
+THE MANUSCRIPT TRANSITION FLOW 
+...............................................................................
+
+COLLECTION ONE: manuscripts
+{
+  "_id": ObjectId(...),
+  "title": "A Great Paper",
+  "author": "Alice Author",
+  "author_email": "alice@example.com",
+  
+  "state": "SUBMITTED",
+
+  "editor": null,
+
+  "latest_version": 1,
+
+  "created_at": ISODate("2025-03-03T00:00:00Z"),
+  "updated_at": ISODate("2025-03-03T00:00:00Z")
+}
+
+
+COLLECTION TWO: manuscript_revisions
+
+{
+  "_id": ObjectId(...),
+  "manuscript_id": ObjectId(...),  
+  "version": 1,
+  "text": "Original text here...",
+  "abstract": "Original abstract here...",
+  "timestamp": ISODate("2025-03-03T00:00:00Z"),
+
+  "review_round": 0,
+
+  "referee_comments": [],
+
+  "author_response": null
+}
+
+COLLECTION 3: manuscript_history
+
+{
+  "_id": ObjectId(...),
+  "manuscript_id": ObjectId(...),
+  "from_state": "SUBMITTED",
+  "to_state": "REFEREE_REVIEW",
+  "timestamp": ISODate("2025-03-03T00:00:00Z"),
+  "actor": "editor@example.com"
+}
+
+COLLECTION 4: manuscript_referees
+
+{
+  "_id": ObjectId(...),
+  "manuscript_id": ObjectId(...),
+  "referee_email": "ref1@example.com",
+  "report": "Detailed feedback goes here...",
+  "verdict": "REJECT" /* or ACCEPT / ACCEPT_W_REV */,
+  "assigned_at": ISODate("2025-03-03T00:00:00Z"),
+  "updated_at": ISODate("2025-03-03T00:00:00Z")
 }
