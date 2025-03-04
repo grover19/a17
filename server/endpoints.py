@@ -171,6 +171,20 @@ class PeopleCreate(Resource):
             MESSAGE: 'Person added!',
             RETURN: ret,
         }
+    
+    
+@api.route('/manuscripts')
+class ManuscriptResource(Resource):
+    """
+    This class handles retrieving all manuscript entries.
+    """
+    def get(self):
+        """
+        Retrieve all manuscript entries.
+        """
+        # Placeholder: Will implement fetching manuscript entries from DB
+        return {}, HTTPStatus.OK  # Will return actual manuscript data in the future
+    
 
 
 MASTHEAD = 'Masthead'
