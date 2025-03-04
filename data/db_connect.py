@@ -25,7 +25,8 @@ def connect_db():
     client global.
     """
     global client
-    if client is None:  # not connected yet! # checkout file: db_connect_README.txt
+    if client is None:  # not connected yet!
+        # checkout file: db_connect_README.txt
         print('Setting client because it is None.')
         if os.environ.get('CLOUD_MONGO', LOCAL) == CLOUD:
             password = os.environ.get('MONGO_PASSWD')
