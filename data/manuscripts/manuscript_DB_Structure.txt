@@ -1,0 +1,35 @@
+{
+  "_id": ObjectId(...),
+  "title": "A Great Paper",
+  "author": "Alice Author",
+  "author_email": "alice@example.com",
+  "state": "SUBMITTED",  
+  "text": "Full text here...",
+  "abstract": "Short summary...",
+  "version": 1,
+  "revisions": [
+    {
+      "version": 1,
+      "text": "Original text...",
+      "abstract": "Original abstract...",
+      "timestamp": "2025-03-03T00:00:00Z",
+      "review_round": 0,
+      "referee_comments": [],
+      "author_response": null
+    }
+  ],
+  "history": [
+    {
+      "state": "SUBMITTED",
+      "timestamp": "2025-03-03T00:00:00Z",
+      "actor": "alice@example.com"
+    }
+  ],
+  "referees": {
+    "ref1@example.com": {
+      "report": "Detailed feedback...",
+      "verdict": "REJECT | ACCEPT | ACCEPT_W_REV"
+    }
+  },
+  "editor": null
+}
