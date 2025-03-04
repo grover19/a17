@@ -154,7 +154,7 @@ class PeopleCreate(Resource):
     @api.expect(PEOPLE_CREATE_FLDS)
     def put(self):
         """
-        Add a person.
+        Add a person
         """
         try:
             print('im here :) ')
