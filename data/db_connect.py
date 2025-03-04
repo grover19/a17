@@ -25,20 +25,8 @@ def connect_db():
     client global.
     """
     global client
-    if client is None:  # not connected yet!
+    if client is None:  # not connected yet! # checkout file: db_connect_README.txt
         print('Setting client because it is None.')
-
-        # 1. Open the terminal and navigate to your repository directory.
-        # This is not necessary, but do the whole
-        # make dev_env and export PYTHONPATH thing
-        # I too was having errors because it was temporarily set.
-        # 2. Run the command: export MONGO_PASSWD='designprojecta17'
-        # 3. Run the command: echo $MONGO_PASSWD
-        # to verify the password is set correctly.
-        # 4. Run the command: export CLOUD_MONGO=1
-        # to set MongoDB to cloud mode.
-        # Run ./local.sh
-
         if os.environ.get('CLOUD_MONGO', LOCAL) == CLOUD:
             password = os.environ.get('MONGO_PASSWD')
             if not password:
