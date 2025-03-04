@@ -32,8 +32,19 @@ text_dict = {
 }
 
 
-def create():
-    pass
+def create(key: str, title: str, text: str): 
+    # Check if an entry with this key already exists in the database.
+    if dbc.read_one(TEXT_COLLECT, {KEY: key}):
+        raise KeyError(f"Key '{key}' already exists in the database.")
+    
+    # Build the document following our schema.
+    document = {KEY: key, TITLE: title, TEXT: text}
+    
+    # Insert the document into the collection.
+    dbc.create(TEXT_COLLECT, document)
+    return True
+
+
 
 
 def delete(dict_key: str):
