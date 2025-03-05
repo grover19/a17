@@ -32,6 +32,8 @@ RETURN = 'return'
 TITLE = 'The Journal of API Technology'
 TITLE_EP = '/title'
 TITLE_RESP = 'Title'
+TEXT_UPDATE_EP = '/text/update'
+TEXT_UPDATE_RESP = 'Text Updated'
 
 
 @api.route(HELLO_EP)
@@ -177,3 +179,33 @@ class Masthead(Resource):
     """
     def get(self):
         return {MASTHEAD: ppl.get_masthead()}
+    
+
+@api.route(f'{TEXT_UPDATE_EP}/<string:key>')
+class TextUpdate(Resource):
+    """
+    Update a new text entry.
+    """
+    @api.response(HTTPStatus.OK, 'Text successfully updated.')
+    @api.response(HTTPStatus.NOT_FOUND, 'Key not found.')
+    @api.response(HTTPStatus.BAD_REQUEST, 'Invalid request.')
+    def put(self, key):
+        """
+        Update the text entry associated with the given key.
+        """
+        try:
+            new_text = request.json.get('text')
+            if not new_text:
+                raise wz.BadRequest('Missing "text" field in request body')
+
+            updated_text = ppl.update_text_entry(key, new_text)
+            if updated_text is None:
+                raise wz.NotFound(f'No entry found for key: {key}')
+
+        except Exception as err:
+            raise wz.InternalServerError(f'Error updating text: {err}')
+
+        return {
+            MESSAGE: TEXT_UPDATE_RESP,
+            RETURN: updated_text,
+        }
