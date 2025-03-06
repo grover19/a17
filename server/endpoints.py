@@ -11,7 +11,7 @@ from flask_cors import CORS
 import werkzeug.exceptions as wz
 
 import data.people as ppl
-import data.text as txt
+# import data.text as txt
 # import data.manuscripts as mss
 
 app = Flask(__name__)
@@ -39,6 +39,8 @@ TITLE_RESP = 'Title'
 TEXT_DELETE_EP = '/text/delete'
 TEXT_DELETE_RESP = 'Text Deleted'
 TEXT_CREATE_EP = '/text/create'
+TEXT_EP = '/text'
+TEXT_ONE_EP = '/text/one'
 
 
 @api.route(HELLO_EP)
@@ -47,6 +49,7 @@ class HelloWorld(Resource):
     The purpose of the HelloWorld class is to have a simple test to see if the
     app is working at all.
     """
+
     def get(self):
         """
         A trivial endpoint to see if the server is running.
@@ -60,12 +63,13 @@ class Endpoints(Resource):
     This class will serve as live, fetchable documentation of what endpoints
     are available in the system.
     """
+
     def get(self):
         """
         The `get()` method will return a sorted list of available endpoints.
         """
         endpoints = sorted(rule.rule for rule in api.app.url_map.iter_rules())
-        return {"Available endpoints": endpoints}
+        return {ENDPOINT_RESP: endpoints}
 
 
 @api.route(TITLE_EP)
@@ -74,6 +78,7 @@ class JournalTitle(Resource):
     This class handles creating, reading, updating
     and deleting the journal title.
     """
+
     def get(self):
         """
         Retrieve the journal title.
@@ -92,6 +97,7 @@ class People(Resource):
     This class handles creating, reading, updating
     and deleting journal people.
     """
+
     def get(self):
         """
         Retrieve the journal people.
@@ -105,6 +111,7 @@ class Person(Resource):
     This class handles creating, reading, updating
     and deleting journal people.
     """
+
     def get(self, email):
         """
         Retrieve a journal person.
@@ -112,17 +119,18 @@ class Person(Resource):
         person = ppl.read_one(email)
         if person:
             return person
-        else:
-            raise wz.NotFound(f'No such record: {email}')
+        raise wz.NotFound(f'No such record: {email}')
 
     @api.response(HTTPStatus.OK, 'Success.')
     @api.response(HTTPStatus.NOT_FOUND, 'No such person.')
     def delete(self, email):
+        """
+        Delete a journal person.
+        """
         ret = ppl.delete(email)
         if ret is not None:
             return {'Deleted': ret}
-        else:
-            raise wz.NotFound(f'No such person: {email}')
+        raise wz.NotFound(f'No such person: {email}')
 
 
 PEOPLE_CREATE_FLDS = api.model('AddNewPeopleEntry', {
@@ -133,59 +141,41 @@ PEOPLE_CREATE_FLDS = api.model('AddNewPeopleEntry', {
 })
 
 
-# PEOPLE_CREATE_FORM = 'People Add Form'
-
-
-# @api.route(f'/{PEOPLE_EP}/{CREATE}/{FORM}')
-# class PeopleAddForm(Resource):
-#     """
-#     Form to add a new person to the journal database.
-#     """
-#     def get(self):
-#         return {PEOPLE_CREATE_FORM: pfrm.get_add_form()}
-
-
 @api.route(f'{PEOPLE_EP}/create')
 class PeopleCreate(Resource):
     """
     Add a person to the journal db.
     """
+
     @api.response(HTTPStatus.OK, 'Success')
     @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
     @api.expect(PEOPLE_CREATE_FLDS)
     def put(self):
         """
-        Add a person
+        Add a person.
         """
         try:
-            print('im here :) ')
             name = request.json.get(ppl.NAME)
             affiliation = request.json.get(ppl.AFFILIATION)
             email = request.json.get(ppl.EMAIL)
             role = request.json.get(ppl.ROLES)
             ret = ppl.create(name, affiliation, email, role)
-            print('rhifwe')
         except Exception as err:
-            raise wz.NotAcceptable(f'Could not add person: '
-                                   f'{err=}')
-        return {
-            MESSAGE: 'Person added!',
-            RETURN: ret,
-        }
-    
-    
+            raise wz.NotAcceptable(f'Could not add person: {err}')
+        return {MESSAGE: 'Person added!', RETURN: ret}
+
+
 @api.route('/manuscripts')
 class ManuscriptResource(Resource):
     """
     This class handles retrieving all manuscript entries.
     """
+
     def get(self):
         """
         Retrieve all manuscript entries.
         """
-        # Placeholder: Will implement fetching manuscript entries from DB
-        return {}, HTTPStatus.OK  # Will return actual manuscript data in the future
-    
+        return {}, HTTPStatus.OK  # Placeholder for future implementation
 
 
 MASTHEAD = 'Masthead'
@@ -196,92 +186,9 @@ class Masthead(Resource):
     """
     Get a journal's masthead.
     """
-    def get(self):
-        return {MASTHEAD: ppl.get_masthead()}
 
-
-# Fields for text; endpoints for text
-
-TEXT_FIELDS = api.model('NewTextEntry', {
-    txt.KEY: fields.String,
-    txt.TITLE: fields.String,
-    txt.TEXT: fields.String,
-})
-
-@api.route(TEXT_EP)
-class TextResource(Resource):
-    """
-    This class handles retrieving all text entries.
-    """
     def get(self):
         """
-        Retrieve all text entries.
+        Retrieve the journal masthead.
         """
-        return txt.read(), HTTPStatus.OK
-
-
-@api.route(TEXT_ONE_EP)
-class TextOneResource(Resource):
-    """
-    This class handles retrieving a single text entry.
-    """
-    def get(self, key):
-        """
-        Retrieve a single text entry by key.
-        """
-        entry = txt.read_one(key)
-        if entry:
-            return entry, HTTPStatus.OK
-        else:
-            raise wz.NotFound(f'No text entry found for key: {key}')
-
-
-@api.route(TEXT_CREATE_EP)
-class TextCreate(Resource):
-    """
-    Endpoint to create a new text entry.
-    """
-    @api.response(HTTPStatus.OK, 'Text created successfully')
-    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
-    @api.expect(TEXT_FIELDS)
-    def post(self):
-        data = request.get_json()
-        key = data.get(txt.KEY)
-        title = data.get(txt.TITLE)
-        text_content = data.get(txt.TEXT)
-        if not key or not title or not text_content:
-            return {"error": "Missing required fields: key, title, and text"}, HTTPStatus.BAD_REQUEST
-
-        try:
-            # Call the text module's create function to insert into MongoDB.
-            txt.create(key, title, text_content)
-            return {"message": "Text created successfully", "key": key}, HTTPStatus.OK
-        except KeyError as e:
-            # This error indicates the key already exists.
-            return {"error": str(e)}, HTTPStatus.NOT_ACCEPTABLE
-        except Exception as e:
-            return {"error": f"Could not create text entry: {e}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-@api.route(f'{TEXT_DELETE_EP}/<string:key>')
-class TextDelete(Resource):
-    @api.response(HTTPStatus.OK, 'Success')
-    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
-    @api.expect(TEXT_FIELDS)
-    def delete(self, key):
-        ret = txt.delete(key)
-        if ret is not None:
-            return {'Deleted': ret}
-        else:
-            raise wz.NotFound(f'No such person: {key}')
-
-
-@api.route(f'{TEXT_DELETE_EP}/<string:key>')
-class TextDelete(Resource):
-    @api.response(HTTPStatus.OK, 'Success')
-    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
-    @api.expect(TEXT_FIELDS)
-    def delete(self, key):
-        ret = txt.delete(key)
-        if ret is not None:
-            return {'Deleted': ret}
-        else:
-            raise wz.NotFound(f'No such person: {key}')
+        return {MASTHEAD: ppl.get_masthead()}  # Placeholder function

@@ -10,7 +10,7 @@ TITLE = 'title'
 TEXT = 'text'
 EMAIL = 'email'
 
-TEXT_COLLECT = 'text'
+TEXT_COLLECTION = 'text'  # Fixed typo here
 
 TEST_KEY = 'HomePage'
 SUBM_KEY = 'SubmissionsPage'
@@ -32,22 +32,22 @@ text_dict = {
 }
 
 
-def create(key: str, title: str, text: str): 
+def create(key: str, title: str, text: str):
     # Check if an entry with this key already exists in the database.
-    if dbc.read_one(TEXT_COLLECT, {KEY: key}):
+    if dbc.read_one(TEXT_COLLECTION, {KEY: key}):
         raise KeyError(f"Key '{key}' already exists in the database.")
-    
+
     # Build the document following our schema.
     document = {KEY: key, TITLE: title, TEXT: text}
-    
+
     # Insert the document into the collection.
-    dbc.create(TEXT_COLLECT, document)
+    dbc.create(TEXT_COLLECTION, document)
     return True
 
 
 def delete(dict_key: str):
     print(f'{KEY=}, {dict_key=}')
-    return dbc.delete(TEXT_COLLECT, {KEY: dict_key})
+    return dbc.delete(TEXT_COLLECTION, {KEY: dict_key})
 
 
 def update():
@@ -66,6 +66,7 @@ def read() -> dict:
         text_entries = text_dict  # Fallback to default dictionary
     print(f'{text_entries=}')  # Debug log
     return text_entries
+
 
 def read_one(key: str) -> dict:
     """
