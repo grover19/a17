@@ -156,6 +156,22 @@ class PeopleCreate(Resource):
         return {MESSAGE: 'Person added!', RETURN: ret}
 
 
+@api.route('/text/<string:key>')
+class TextOneResource(Resource):
+    """
+    This class handles retrieving a single text entry.
+    """
+    def get(self, key):
+        """
+        Retrieve a single text entry by key.
+        """
+        entry = txt.read_one(key)
+        if entry:
+            return entry, HTTPStatus.OK
+        else:
+            raise wz.NotFound(f'No text entry found for key: {key}')
+
+
 @api.route(TEXT_CREATE_EP)
 class TextCreate(Resource):
     """
