@@ -2,6 +2,7 @@
 This is the file containing all of the endpoints for our flask app.
 The endpoint called `endpoints` will return all available endpoints.
 """
+
 from http import HTTPStatus
 
 from flask import Flask, request
@@ -11,8 +12,7 @@ from flask_cors import CORS
 import werkzeug.exceptions as wz
 
 import data.people as ppl
-# import data.text as txt
-# import data.manuscripts as mss
+import data.text as txt
 
 app = Flask(__name__)
 CORS(app)
@@ -35,12 +35,10 @@ TITLE = 'The Journal of API Technology'
 TITLE_EP = '/title'
 TITLE_RESP = 'Title'
 
-# EP and RESP for text endpoints:
 TEXT_DELETE_EP = '/text/delete'
 TEXT_DELETE_RESP = 'Text Deleted'
 TEXT_CREATE_EP = '/text/create'
-TEXT_EP = '/text'
-TEXT_ONE_EP = '/text/one'
+TEXT_COLLECTION = 'text'
 
 
 @api.route(HELLO_EP)
@@ -49,7 +47,6 @@ class HelloWorld(Resource):
     The purpose of the HelloWorld class is to have a simple test to see if the
     app is working at all.
     """
-
     def get(self):
         """
         A trivial endpoint to see if the server is running.
@@ -63,7 +60,6 @@ class Endpoints(Resource):
     This class will serve as live, fetchable documentation of what endpoints
     are available in the system.
     """
-
     def get(self):
         """
         The `get()` method will return a sorted list of available endpoints.
@@ -78,7 +74,6 @@ class JournalTitle(Resource):
     This class handles creating, reading, updating
     and deleting the journal title.
     """
-
     def get(self):
         """
         Retrieve the journal title.
@@ -97,7 +92,6 @@ class People(Resource):
     This class handles creating, reading, updating
     and deleting journal people.
     """
-
     def get(self):
         """
         Retrieve the journal people.
@@ -111,7 +105,6 @@ class Person(Resource):
     This class handles creating, reading, updating
     and deleting journal people.
     """
-
     def get(self, email):
         """
         Retrieve a journal person.
@@ -119,18 +112,17 @@ class Person(Resource):
         person = ppl.read_one(email)
         if person:
             return person
-        raise wz.NotFound(f'No such record: {email}')
+        else:
+            raise wz.NotFound(f'No such record: {email}')
 
     @api.response(HTTPStatus.OK, 'Success.')
     @api.response(HTTPStatus.NOT_FOUND, 'No such person.')
     def delete(self, email):
-        """
-        Delete a journal person.
-        """
         ret = ppl.delete(email)
         if ret is not None:
             return {'Deleted': ret}
-        raise wz.NotFound(f'No such person: {email}')
+        else:
+            raise wz.NotFound(f'No such person: {email}')
 
 
 PEOPLE_CREATE_FLDS = api.model('AddNewPeopleEntry', {
@@ -146,13 +138,12 @@ class PeopleCreate(Resource):
     """
     Add a person to the journal db.
     """
-
     @api.response(HTTPStatus.OK, 'Success')
     @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
     @api.expect(PEOPLE_CREATE_FLDS)
     def put(self):
         """
-        Add a person.
+        Add a person
         """
         try:
             name = request.json.get(ppl.NAME)
@@ -161,34 +152,39 @@ class PeopleCreate(Resource):
             role = request.json.get(ppl.ROLES)
             ret = ppl.create(name, affiliation, email, role)
         except Exception as err:
-            raise wz.NotAcceptable(f'Could not add person: {err}')
+            raise wz.NotAcceptable(f'Could not add person: {err=}')
         return {MESSAGE: 'Person added!', RETURN: ret}
 
 
-@api.route('/manuscripts')
-class ManuscriptResource(Resource):
+@api.route(TEXT_CREATE_EP)
+class TextCreate(Resource):
     """
-    This class handles retrieving all manuscript entries.
+    This class handles creating text entries.
     """
-
-    def get(self):
+    @api.expect(api.model('CreateText', {
+        'key': fields.String,
+        'title': fields.String,
+        'text': fields.String,
+    }))
+    def put(self):
         """
-        Retrieve all manuscript entries.
+        Create a new text entry.
         """
-        return {}, HTTPStatus.OK  # Placeholder for future implementation
+        data = request.json
+        return txt.create(data['key'], data['title'], data['text'])
 
 
-MASTHEAD = 'Masthead'
-
-
-@api.route(f'{PEOPLE_EP}/masthead')
-class Masthead(Resource):
+@api.route(TEXT_DELETE_EP)
+class TextDelete(Resource):
     """
-    Get a journal's masthead.
+    This class handles deleting text entries.
     """
+    def delete(self, key):
+        """
+        Delete a text entry.
+        """
+        return txt.delete(key)
 
-    def get(self):
-        """
-        Retrieve the journal masthead.
-        """
-        return {MASTHEAD: ppl.get_masthead()}  # Placeholder function
+
+if __name__ == '__main__':
+    app.run(debug=True)
