@@ -48,6 +48,12 @@ jobs:
       - name: Run Python tests.
         run: make all_tests
 
+      - name: Debug: List files in GitHub Actions
+        run: ls -l
+
+      - name: Make deploy.sh executable
+        run: chmod +x deploy.sh
+
       - name: Deploy to PythonAnywhere
         run: ./deploy.sh
         env:
