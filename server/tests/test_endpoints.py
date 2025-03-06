@@ -64,7 +64,7 @@ def test_read_one_not_found(mock_read):
     'text': 'Sample content for testing.'
 })
 def test_text_read_one(mock_read):
-    resp = TEST_CLIENT.get(f'{ep.TEXT_DELETE_EP}/HomePage')
+    resp = TEST_CLIENT.get(f'/text/HomePage')
     assert resp.status_code == OK
     resp_json = resp.get_json()
     assert 'title' in resp_json
