@@ -3,6 +3,8 @@ client = dbc.connect_db()
 from datetime import datetime
 import  data.manuscripts.states as states  
 import data.people as ppl 
+from bson.objectid import ObjectId
+
 
 # --- Collection Names ---
 MANUSCRIPTS_COLLECT = 'manuscripts'
@@ -14,17 +16,18 @@ MONGO_ID = '_id'
 # --- Field Names for Manuscripts --- # 
 
 AUTHOR = 'author'  # reference to a PERSON document
-TITLE = 'title'
 MANUSCRIPT_CREATION = 'manuscript_creation'
  # reference to a history object document
 MANUSCRIPT_HISTORY_FK = 'manuscript_history' 
-STATE = 'state'
 VERSION = 'version'  # array of version objects
 
 
 # --- Fields within a Version Object ---
 VERSION_CREATION = 'version_created'
 TEXT = 'text'
+TITLE = 'title'
+STATE = 'state'
+
 
 
 # --- Fields within a Revision Object ---
@@ -72,11 +75,11 @@ def create_simple_manuscript(author, title, text):
 
     new_manuscript = {
     AUTHOR: author, 
-    TITLE: title,
     MANUSCRIPT_CREATION: get_est_time(),
-    STATE: states.DEFAULT_STATE,  # initial state can be 'Draft'
     VERSION: [
     {
+        STATE: states.DEFAULT_STATE,  # initial state can be 'Draft'
+        TITLE: title, 
         VERSION_CREATION: MANUSCRIPT_CREATION,
         VERSION: states.DEFAULT_VERSION,
         TEXT: text,
@@ -116,11 +119,18 @@ def create(author, title, text):
     }
 
 
-def read_one_manuscript(author) -> dict:
-      return dbc.read_one(MANUSCRIPTS_COLLECT, {'author': author})
+def read_one_manuscript(manuscript_id) -> dict:
+    object_id = ObjectId(manuscript_id)
+
+    return dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: object_id})
+
+def read(manuscript_id) -> list:
+    object_id = ObjectId(manuscript_id)
+
+    return dbc.read(MANUSCRIPTS_COLLECT, {MONGO_ID: object_id})
 
 
-def read(manuscriptId) -> list:
-    return dbc.read(MANUSCRIPTS_COLLECT, {MONGO_ID: manuscriptId})
+def delete_manuscript(manuscript_id):
+    manuscript_id = ObjectId(manuscript_id)
+    return dbc.delete(MANUSCRIPTS_COLLECT, {MONGO_ID: manuscript_id}) 
 
-  
