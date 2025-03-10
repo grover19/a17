@@ -1,110 +1,70 @@
-...............................................................................
+Manuscript action flow: https://github.com/AthenaKouKou/journal/blob/main/docs/Manuscript_FSM.jpg 
+Manuscript Document Collection Structure 
+Each manuscripts is connected to ONLY ONE manuscript_history_Object (idek if this is possible )
 
-OPTION ONE: HAVE ONE SINGULAR MANUSCRIPT COLLECTION THAT CAN ACCOMODATE 
-THE MANUSCRIPT TANSITION FLOW 
+We update manuscript_history_Object every time the AUTHOR publishes any changes -- so basically every time an UPDATE happens. Then, we give MANUSCRIPT a clean, new manuscript_test_object and we copy the old manuscript_text_Object into this schema. We link the history back to the manuscript with a unique id 
 
-...............................................................................
+So it’s also possible for us to normalize the schema below into multiple collections, but I heard that in mongodb you should have shit in collections unless absolutely necessary, bs the whole concept of mongodb is to have the related thing bundled up in one “JSON-LIKE” object so that “fetch-ing” information (READ operations) are quick and easy. But also! Each collection has a max limits of 16 MB (i think) so the document can’t grow toooo long. If need be, we might make “versions” it’s own entity 
 
+This whole nesting thing is so ugly 😫 but look! I made it color coded and all pretty :) 
 
-Manuscripts Collection 
-{
-  "_id": ObjectId(...),
-  "title": "A Great Paper",
-  "author": "Alice Author",
-  "author_email": "alice@example.com",
-  "state": "SUBMITTED",  
-  "text": "Full text here...",
-  "abstract": "Short summary...",
-  "version": 1,
-  "revisions": [
+manuscripts: [
     {
-      "version": 1,
-      "text": "Original text...",
-      "abstract": "Original abstract...",
-      "timestamp": "2025-03-03T00:00:00Z",
-      "review_round": 0,
-      "referee_comments": [],
-      "author_response": null
-    }
-  ],
-  "history": [
-    {
-      "state": "SUBMITTED",
-      "timestamp": "2025-03-03T00:00:00Z",
-      "actor": "alice@example.com"
-    }
-  ],
-  "referees": {
-    "ref1@example.com": {
-      "report": "Detailed feedback...",
-      "verdict": "REJECT | ACCEPT | ACCEPT_W_REV"
-    }
-  },
-  "editor": null
-}
+      "author": "Author Name", 
+      "title": "Manuscript Title", ← 
+	“manuscript_creation” : “12-12-2023” 
+	“manuscript_history”: reference to an id of something else 
+	“State”: 
+      "version": [
+        {
+	    “version_creation”: “12-12-2023”
+    “Version”: 1 
+    “Text”: 
+          "editors": [ 
+            {
+                "editor": [ 
+                  {
+                    "person": “link to a person object”
+                    "role": "Editor/Reviewer/etc.",
+             
+  "comments": [] // comments_object ends 
+
+                  }] //editor_object ends 
+
+            }] // revision_entity ends  
+
+      }] // manuscript_text_Object ends 
+    }]  // manuscripts Object ends 
 
 
 
-...............................................................................
+manuscript_history_Object: [
+	Manuscript_id: references a manuscript object id 
+	history: [{
+ “Date_created”: “12-12-2023”
+    “Version”: 1 
+          "revision_Entity": [
+            {
+                "editor_object": [
+                  {
+                    "person": "Link or reference to Person object",
+                    "role": "Editor/Reviewer/etc.",
+                   
+  "Comments_Object": [
+                      {
+                        "comment": "This is a sample comment.",
+                        "author_response": "Author response here."
+                      },
+                      {
+                        "comment": "Another comment example.",
+                        "author_response": "Another author response."
+                      } ] // comments_object ends 
 
-OPTION 2 : HAVE MULTIPLE MANUSCRIPT SCTURCTURE THAT CAN ACCOMODATE 
-THE MANUSCRIPT TRANSITION FLOW 
-...............................................................................
+                  }] //editor_object ends here 
 
-COLLECTION ONE: manuscripts
-{
-  "_id": ObjectId(...),
-  "title": "A Great Paper",
-  "author": "Alice Author",
-  "author_email": "alice@example.com",
-  
-  "state": "SUBMITTED",
+            }] // revision_entity ends  here 
 
-  "editor": null,
-
-  "latest_version": 1,
-
-  "created_at": ISODate("2025-03-03T00:00:00Z"),
-  "updated_at": ISODate("2025-03-03T00:00:00Z")
-}
+}]past_manuscript_text_Object ends here 
 
 
-COLLECTION TWO: manuscript_revisions
-
-{
-  "_id": ObjectId(...),
-  "manuscript_id": ObjectId(...),  
-  "version": 1,
-  "text": "Original text here...",
-  "abstract": "Original abstract here...",
-  "timestamp": ISODate("2025-03-03T00:00:00Z"),
-
-  "review_round": 0,
-
-  "referee_comments": [],
-
-  "author_response": null
-}
-
-COLLECTION 3: manuscript_history
-
-{
-  "_id": ObjectId(...),
-  "manuscript_id": ObjectId(...),
-  "from_state": "SUBMITTED",
-  "to_state": "REFEREE_REVIEW",
-  "timestamp": ISODate("2025-03-03T00:00:00Z"),
-  "actor": "editor@example.com"
-}
-
-COLLECTION 4: manuscript_referees
-
-{
-  "_id": ObjectId(...),
-  "manuscript_id": ObjectId(...),
-  "referee_email": "ref1@example.com",
-  "report": "Detailed feedback goes here...",
-  "verdict": "REJECT" /* or ACCEPT / ACCEPT_W_REV */,
-  "assigned_at": ISODate("2025-03-03T00:00:00Z"),
-  "updated_at": ISODate("2025-03-03T00:00:00Z")
-}
+  ] //manuscript_history_Object ends here 
