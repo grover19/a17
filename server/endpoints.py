@@ -46,6 +46,7 @@ TEXT_COLLECTION = 'text'
 # --- Manuscript Endpoint Constants ---
 MANUSCRIPTS_EP = '/manuscripts'
 MANUSCRIPTS_CREATE_EP = f'{MANUSCRIPTS_EP}/create'
+MANUSCRIPTS_GET_EP = f'{MANUSCRIPTS_EP}/GET'
 
 
 MANUSCRIPT_CREATE_FLDS = api.model('CreateManuscript', {
@@ -84,19 +85,61 @@ class ManuscriptCreate(Resource):
                     "Missing required field(s): 'title' or 'text'.")
 
             # Call the manuscript creation function from data.manuscripts.
-            manuscript_id = manuscripts.create_manuscript(
+            manuscript = manuscripts.create(
                             author,
                             title,
                             text)
-            if not manuscript_id:
+            if not manuscript:
                 raise wz.InternalServerError("Manuscript creation failed.")
 
             return {
                 'message': 'Manuscript created successfully',
-                'manuscript_id': str(manuscript_id)
+                'manuscript_id': str(manuscript)
             }, HTTPStatus.CREATED
         except Exception as err:
             raise wz.InternalServerError(f"Error creating manuscript: {err}")
+
+
+MANUSCRIPT_GET_FLDS = api.model('updateManuscript', {
+    "": fields.String(
+        required=True
+    )
+})
+
+
+@api.route(MANUSCRIPTS_GET_EP)  # Use a proper route
+class ManuscriptRetrieve(Resource):
+    """
+    This class handles retrieving manuscript entries by author name.
+    """
+    @api.expect(MANUSCRIPT_GET_FLDS)
+    @api.response(HTTPStatus.OK, 'Manuscript retrieved successfully')
+    @api.response(HTTPStatus.NOT_FOUND, 'Manuscript not found')
+    def put(self):
+        """
+        Retrieve a manuscript by the author's name.
+        """
+        try:
+            author_name = request.json.get('author_name')
+
+            if not author_name:
+                raise wz.BadRequest(
+                    "Missing required parameter: 'author_name'.")
+
+            # Fetch the manuscript from the database
+            manuscript = manuscripts.read_one(author_name)
+
+            if not manuscript:
+                raise wz.NotFound(
+                    f"No manuscript found for author '{author_name}'.")
+
+            return {
+                'author': manuscript.get('author'),
+                'title': manuscript.get('title'),
+                'text': manuscript.get('text'),
+            }, HTTPStatus.OK
+        except Exception as err:
+            raise wz.InternalServerError(f"Error retrieving manuscript: {err}")
 
 
 @api.route(HELLO_EP)
