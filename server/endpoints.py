@@ -47,6 +47,7 @@ TEXT_COLLECTION = 'text'
 MANUSCRIPTS_EP = '/manuscripts'
 MANUSCRIPTS_CREATE_EP = f'{MANUSCRIPTS_EP}/create'
 MANUSCRIPTS_GET_EP = f'{MANUSCRIPTS_EP}/GET'
+MANUSCRIPTS_DEL_EP = f'{MANUSCRIPTS_EP}/delete'
 
 
 MANUSCRIPT_CREATE_FLDS = api.model('CreateManuscript', {
@@ -139,6 +140,45 @@ class ManuscriptRetrieve(Resource):
             }, HTTPStatus.OK
         except Exception as err:
             raise wz.InternalServerError(f"Error retrieving manuscript: {err}")
+
+
+MANUSCRIPT_DELETE_FLDS = api.model('DeleteManuscript', {
+    "manuscript_id": fields.String(
+        required=True
+    )
+})
+
+@api.route(MANUSCRIPTS_DEL_EP)
+class ManuscriptDelete(Resource):
+    """
+    This class handles deleting manuscript entries by manuscript id.
+    """
+    @api.expect(MANUSCRIPT_DELETE_FLDS)
+    @api.response(HTTPStatus.OK, 'Manuscript deleted successfully')
+    @api.response(HTTPStatus.NOT_FOUND, 'Manuscript not found')
+    def delete(self):
+        """
+        Delete a manuscript by its manuscript id.
+        """
+        try:
+            manuscript_id = request.json.get('manuscript_id')
+            if not manuscript_id:
+                raise wz.BadRequest("Missing required parameter: 'manuscript_id'.")
+            
+            # Attempt to delete the manuscript from the database.
+            # This assumes that `manuscripts.delete_manuscript` is a function
+            # that deletes the manuscript and returns a truthy value on success.
+            deleted = manuscripts.delete_manuscript(manuscript_id)
+            
+            if not deleted:
+                raise wz.NotFound(f"No manuscript found for manuscript id '{manuscript_id}'.")
+            
+            return {
+                'message': 'Manuscript deleted successfully'
+            }, HTTPStatus.OK
+        except Exception as err:
+            raise wz.InternalServerError(f"Error deleting manuscript: {err}")
+
 
 
 @api.route(HELLO_EP)
