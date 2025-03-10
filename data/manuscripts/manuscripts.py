@@ -128,4 +128,8 @@ def read(manuscript_id) -> list:
 
     return dbc.read(MANUSCRIPTS_COLLECT, {MONGO_ID: object_id})
 
-  
+
+def delete_manuscript(manuscript_id):
+    manuscript_id = ObjectId(manuscript_id)
+    return dbc.delete(MANUSCRIPTS_COLLECT, {MONGO_ID: manuscript_id}) 
+
