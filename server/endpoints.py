@@ -46,6 +46,8 @@ TEXT_COLLECTION = 'text'
 # --- Manuscript Endpoint Constants ---
 MANUSCRIPTS_EP = '/manuscripts'
 MANUSCRIPTS_CREATE_EP = f'{MANUSCRIPTS_EP}/create'
+MANUSCRIPTS_GET_EP = f'{MANUSCRIPTS_EP}/GET'
+MANUSCRIPTS_DEL_EP = f'{MANUSCRIPTS_EP}/delete'
 
 
 MANUSCRIPT_CREATE_FLDS = api.model('CreateManuscript', {
@@ -84,19 +86,99 @@ class ManuscriptCreate(Resource):
                     "Missing required field(s): 'title' or 'text'.")
 
             # Call the manuscript creation function from data.manuscripts.
-            manuscript_id = manuscripts.create_manuscript(
+            manuscript = manuscripts.create(
                             author,
                             title,
                             text)
-            if not manuscript_id:
+            if not manuscript:
                 raise wz.InternalServerError("Manuscript creation failed.")
 
             return {
                 'message': 'Manuscript created successfully',
-                'manuscript_id': str(manuscript_id)
+                'manuscript_id': str(manuscript)
             }, HTTPStatus.CREATED
         except Exception as err:
             raise wz.InternalServerError(f"Error creating manuscript: {err}")
+
+
+MANUSCRIPT_GET_FLDS = api.model('updateManuscript', {
+    "manuscript_id": fields.String(
+        required=True
+    )
+})
+
+@api.route(MANUSCRIPTS_GET_EP)  # Use a proper route
+class ManuscriptRetrieve(Resource):
+    """
+    This class handles retrieving manuscript entries by author name.
+    """
+    @api.expect(MANUSCRIPT_GET_FLDS)
+    @api.response(HTTPStatus.OK, 'Manuscript retrieved successfully')
+    @api.response(HTTPStatus.NOT_FOUND, 'Manuscript not found')
+    def put(self):
+        """
+        Retrieve a manuscript by the manuscript id.
+        """
+        try:
+            manuscript_id = request.json.get('manuscript_id')
+
+            if not manuscript_id:
+                raise wz.BadRequest(
+                    "Missing required parameter: 'manuscript_id'.")
+
+            # Fetch the manuscript from the database
+            manuscript = manuscripts.read_one_manuscript(manuscript_id)
+
+            if not manuscript:
+                raise wz.NotFound(
+                    f"No manuscript found for author '{manuscript_id}'.")
+
+            return {
+                'author': manuscript.get('author'),
+                'title': manuscript.get('title'),
+                'text': manuscript.get('text'),
+            }, HTTPStatus.OK
+        except Exception as err:
+            raise wz.InternalServerError(f"Error retrieving manuscript: {err}")
+
+
+MANUSCRIPT_DELETE_FLDS = api.model('DeleteManuscript', {
+    "manuscript_id": fields.String(
+        required=True
+    )
+})
+
+@api.route(MANUSCRIPTS_DEL_EP)
+class ManuscriptDelete(Resource):
+    """
+    This class handles deleting manuscript entries by manuscript id.
+    """
+    @api.expect(MANUSCRIPT_DELETE_FLDS)
+    @api.response(HTTPStatus.OK, 'Manuscript deleted successfully')
+    @api.response(HTTPStatus.NOT_FOUND, 'Manuscript not found')
+    def delete(self):
+        """
+        Delete a manuscript by its manuscript id.
+        """
+        try:
+            manuscript_id = request.json.get('manuscript_id')
+            if not manuscript_id:
+                raise wz.BadRequest("Missing required parameter: 'manuscript_id'.")
+            
+            # Attempt to delete the manuscript from the database.
+            # This assumes that `manuscripts.delete_manuscript` is a function
+            # that deletes the manuscript and returns a truthy value on success.
+            deleted = manuscripts.delete_manuscript(manuscript_id)
+            
+            if not deleted:
+                raise wz.NotFound(f"No manuscript found for manuscript id '{manuscript_id}'.")
+            
+            return {
+                'message': 'Manuscript deleted successfully'
+            }, HTTPStatus.OK
+        except Exception as err:
+            raise wz.InternalServerError(f"Error deleting manuscript: {err}")
+
 
 
 @api.route(HELLO_EP)
