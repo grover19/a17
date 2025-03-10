@@ -16,17 +16,18 @@ MONGO_ID = '_id'
 # --- Field Names for Manuscripts --- # 
 
 AUTHOR = 'author'  # reference to a PERSON document
-TITLE = 'title'
 MANUSCRIPT_CREATION = 'manuscript_creation'
  # reference to a history object document
 MANUSCRIPT_HISTORY_FK = 'manuscript_history' 
-STATE = 'state'
 VERSION = 'version'  # array of version objects
 
 
 # --- Fields within a Version Object ---
 VERSION_CREATION = 'version_created'
 TEXT = 'text'
+TITLE = 'title'
+STATE = 'state'
+
 
 
 # --- Fields within a Revision Object ---
@@ -74,11 +75,11 @@ def create_simple_manuscript(author, title, text):
 
     new_manuscript = {
     AUTHOR: author, 
-    TITLE: title,
     MANUSCRIPT_CREATION: get_est_time(),
-    STATE: states.DEFAULT_STATE,  # initial state can be 'Draft'
     VERSION: [
     {
+        STATE: states.DEFAULT_STATE,  # initial state can be 'Draft'
+        TITLE: title, 
         VERSION_CREATION: MANUSCRIPT_CREATION,
         VERSION: states.DEFAULT_VERSION,
         TEXT: text,
