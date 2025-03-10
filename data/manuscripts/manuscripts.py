@@ -7,6 +7,7 @@ import data.people as ppl
 # --- Collection Names ---
 MANUSCRIPTS_COLLECT = 'manuscripts'
 MANUSCRIPT_HISTORY_COLLECT = 'manuscript_history'
+MONGO_ID = '_id'
 
 
 
@@ -45,6 +46,10 @@ dbc.connect_db()
 
 def get_est_time():
     return datetime.now()
+
+
+# ------ HELPER FUNCTIONS ------------ 
+
 
 
 def create_manuscript_history(manuscriptId):
@@ -88,51 +93,34 @@ def create_simple_manuscript(author, title, text):
     return manuscriptId 
 
 
-def create_manuscript(author, title, text): 
+def create(author, title, text): 
     manuscriptId = create_simple_manuscript(author, title, text)
     manuscript_historyId = create_manuscript_history(manuscriptId) 
-    
+
     updated_manuscript = dbc.update(
         MANUSCRIPTS_COLLECT, 
-        {"_id": manuscriptId}, 
+        {MONGO_ID: manuscriptId}, 
         {MANUSCRIPT_HISTORY_FK: manuscript_historyId}
     )
-    
+
+    str_manuscript_id = dbc.convert_mongo_id(MANUSCRIPTS_COLLECT)
+    str_manuscript_historyId = dbc.convert_mongo_id(MANUSCRIPT_HISTORY_COLLECT)
+
     if not updated_manuscript.modified_count:
         raise Exception("Failed to update manuscript with manuscript_history_fk.")
-    
+
     # Return both IDs for further processing
     return {
-        "manuscript_id": manuscriptId,
-        "manuscript_history_id": manuscript_historyId
+        "manuscript_id": str_manuscript_id,
+        "manuscript_history_id": str_manuscript_historyId
     }
 
-def delete_manuscript(manu_id: str):
+
+def read_one_manuscript(author) -> dict:
+      return dbc.read_one(MANUSCRIPTS_COLLECT, {'author': author})
 
 
-    print(f'_id {manu_id=}')
+def read(manuscriptId) -> list:
+    return dbc.read(MANUSCRIPTS_COLLECT, {MONGO_ID: manuscriptId})
 
-    return dbc.delete(MANUSCRIPTS_COLLECT, {'_id': manu_id})
-
-
-def get_manuscript_history():
-    pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
