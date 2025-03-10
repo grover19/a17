@@ -3,6 +3,8 @@ client = dbc.connect_db()
 from datetime import datetime
 import  data.manuscripts.states as states  
 import data.people as ppl 
+from bson.objectid import ObjectId
+
 
 # --- Collection Names ---
 MANUSCRIPTS_COLLECT = 'manuscripts'
@@ -116,11 +118,14 @@ def create(author, title, text):
     }
 
 
-def read_one_manuscript(author) -> dict:
-      return dbc.read_one(MANUSCRIPTS_COLLECT, {'author': author})
+def read_one_manuscript(manuscript_id) -> dict:
+    object_id = ObjectId(manuscript_id)
 
+    return dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: object_id})
 
-def read(manuscriptId) -> list:
-    return dbc.read(MANUSCRIPTS_COLLECT, {MONGO_ID: manuscriptId})
+def read(manuscript_id) -> list:
+    object_id = ObjectId(manuscript_id)
+
+    return dbc.read(MANUSCRIPTS_COLLECT, {MONGO_ID: object_id})
 
   

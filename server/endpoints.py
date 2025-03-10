@@ -101,11 +101,10 @@ class ManuscriptCreate(Resource):
 
 
 MANUSCRIPT_GET_FLDS = api.model('updateManuscript', {
-    "": fields.String(
+    "manuscript_id": fields.String(
         required=True
     )
 })
-
 
 @api.route(MANUSCRIPTS_GET_EP)  # Use a proper route
 class ManuscriptRetrieve(Resource):
@@ -117,21 +116,21 @@ class ManuscriptRetrieve(Resource):
     @api.response(HTTPStatus.NOT_FOUND, 'Manuscript not found')
     def put(self):
         """
-        Retrieve a manuscript by the author's name.
+        Retrieve a manuscript by the manuscript id.
         """
         try:
-            author_name = request.json.get('author_name')
+            manuscript_id = request.json.get('manuscript_id')
 
-            if not author_name:
+            if not manuscript_id:
                 raise wz.BadRequest(
-                    "Missing required parameter: 'author_name'.")
+                    "Missing required parameter: 'manuscript_id'.")
 
             # Fetch the manuscript from the database
-            manuscript = manuscripts.read_one(author_name)
+            manuscript = manuscripts.read_one_manuscript(manuscript_id)
 
             if not manuscript:
                 raise wz.NotFound(
-                    f"No manuscript found for author '{author_name}'.")
+                    f"No manuscript found for author '{manuscript_id}'.")
 
             return {
                 'author': manuscript.get('author'),
