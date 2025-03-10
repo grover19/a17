@@ -57,3 +57,17 @@ def test_read_one(mock_read):
 def test_read_one_not_found(mock_read):
     resp = TEST_CLIENT.get(f'{ep.PEOPLE_EP}/mock_id')
     assert resp.status_code == NOT_FOUND
+
+
+@patch('data.text.read_one', autospec=True, return_value={
+    'title': 'Home Page',
+    'text': 'Sample content for testing.'
+})
+def test_text_read_one(mock_read):
+    resp = TEST_CLIENT.get(f'/text/HomePage')
+    assert resp.status_code == OK
+    resp_json = resp.get_json()
+    assert 'title' in resp_json
+    assert 'text' in resp_json
+    assert resp_json['title'] == 'Home Page'
+    assert resp_json['text'] == 'Sample content for testing.'

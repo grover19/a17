@@ -2,6 +2,7 @@
 This is the file containing all of the endpoints for our flask app.
 The endpoint called `endpoints` will return all available endpoints.
 """
+
 from http import HTTPStatus
 
 from flask import Flask, request
@@ -12,7 +13,8 @@ import werkzeug.exceptions as wz
 
 import data.people as ppl
 import data.text as txt
-# import data.manuscripts as mss
+import data.manuscripts.manuscripts as manuscripts
+
 
 app = Flask(__name__)
 CORS(app)
@@ -35,9 +37,66 @@ TITLE = 'The Journal of API Technology'
 TITLE_EP = '/title'
 TITLE_RESP = 'Title'
 
-# EP and RESP for text endpoints:
+# ENDPOINTS FOR TEXT
 TEXT_DELETE_EP = '/text/delete'
 TEXT_DELETE_RESP = 'Text Deleted'
+TEXT_CREATE_EP = '/text/create'
+TEXT_COLLECTION = 'text'
+
+# --- Manuscript Endpoint Constants ---
+MANUSCRIPTS_EP = '/manuscripts'
+MANUSCRIPTS_CREATE_EP = f'{MANUSCRIPTS_EP}/create'
+
+
+MANUSCRIPT_CREATE_FLDS = api.model('CreateManuscript', {
+    'author': fields.String(
+        required=True,
+    ),
+    'title': fields.String(
+        required=True,
+    ),
+    'text': fields.String(
+        required=True,
+    ),
+})
+
+
+@api.route(MANUSCRIPTS_CREATE_EP)
+class ManuscriptCreate(Resource):
+    """
+    This class handles creating new manuscript entries.
+    """
+    @api.expect(MANUSCRIPT_CREATE_FLDS)
+    @api.response(HTTPStatus.CREATED, 'Manuscript successfully created')
+    @api.response(HTTPStatus.BAD_REQUEST, 'Missing required fields')
+    def put(self):
+        """
+        Create a new manuscript.
+        """
+        try:
+            # Use the provided author or default to the value in the model
+            author = request.json.get('author')
+            title = request.json.get('title')
+            text = request.json.get('text')
+
+            if not all([title, text]):
+                raise wz.BadRequest(
+                    "Missing required field(s): 'title' or 'text'.")
+
+            # Call the manuscript creation function from data.manuscripts.
+            manuscript_id = manuscripts.create_manuscript(
+                            author,
+                            title,
+                            text)
+            if not manuscript_id:
+                raise wz.InternalServerError("Manuscript creation failed.")
+
+            return {
+                'message': 'Manuscript created successfully',
+                'manuscript_id': str(manuscript_id)
+            }, HTTPStatus.CREATED
+        except Exception as err:
+            raise wz.InternalServerError(f"Error creating manuscript: {err}")
 
 
 @api.route(HELLO_EP)
@@ -64,7 +123,7 @@ class Endpoints(Resource):
         The `get()` method will return a sorted list of available endpoints.
         """
         endpoints = sorted(rule.rule for rule in api.app.url_map.iter_rules())
-        return {"Available endpoints": endpoints}
+        return {ENDPOINT_RESP: endpoints}
 
 
 @api.route(TITLE_EP)
@@ -132,18 +191,6 @@ PEOPLE_CREATE_FLDS = api.model('AddNewPeopleEntry', {
 })
 
 
-# PEOPLE_CREATE_FORM = 'People Add Form'
-
-
-# @api.route(f'/{PEOPLE_EP}/{CREATE}/{FORM}')
-# class PeopleAddForm(Resource):
-#     """
-#     Form to add a new person to the journal database.
-#     """
-#     def get(self):
-#         return {PEOPLE_CREATE_FORM: pfrm.get_add_form()}
-
-
 @api.route(f'{PEOPLE_EP}/create')
 class PeopleCreate(Resource):
     """
@@ -154,54 +201,64 @@ class PeopleCreate(Resource):
     @api.expect(PEOPLE_CREATE_FLDS)
     def put(self):
         """
-        Add a person.
+        Add a person
         """
         try:
-            print('im here :) ')
             name = request.json.get(ppl.NAME)
             affiliation = request.json.get(ppl.AFFILIATION)
             email = request.json.get(ppl.EMAIL)
             role = request.json.get(ppl.ROLES)
             ret = ppl.create(name, affiliation, email, role)
-            print('rhifwe')
         except Exception as err:
-            raise wz.NotAcceptable(f'Could not add person: '
-                                   f'{err=}')
-        return {
-            MESSAGE: 'Person added!',
-            RETURN: ret,
-        }
+            raise wz.NotAcceptable(f'Could not add person: {err=}')
+        return {MESSAGE: 'Person added!', RETURN: ret}
 
 
-MASTHEAD = 'Masthead'
-
-
-@api.route(f'{PEOPLE_EP}/masthead')
-class Masthead(Resource):
+@api.route('/text/<string:key>')
+class TextOneResource(Resource):
     """
-    Get a journal's masthead.
+    This class handles retrieving a single text entry.
     """
-    def get(self):
-        return {MASTHEAD: ppl.get_masthead()}
-
-
-# Fields for text; endpoints for text
-
-TEXT_FIELDS = api.model('NewTextEntry', {
-    txt.KEY: fields.String,
-    txt.TITLE: fields.String,
-    txt.TEXT: fields.String,
-})
-
-
-@api.route(f'{TEXT_DELETE_EP}/<string:key>')
-class TextDelete(Resource):
-    @api.response(HTTPStatus.OK, 'Success')
-    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
-    @api.expect(TEXT_FIELDS)
-    def delete(self, key):
-        ret = txt.delete(key)
-        if ret is not None:
-            return {'Deleted': ret}
+    def get(self, key):
+        """
+        Retrieve a single text entry by key.
+        """
+        entry = txt.read_one(key)
+        if entry:
+            return entry, HTTPStatus.OK
         else:
-            raise wz.NotFound(f'No such person: {key}')
+            raise wz.NotFound(f'No text entry found for key: {key}')
+
+
+@api.route(TEXT_CREATE_EP)
+class TextCreate(Resource):
+    """
+    This class handles creating text entries.
+    """
+    @api.expect(api.model('CreateText', {
+        'key': fields.String,
+        'title': fields.String,
+        'text': fields.String,
+    }))
+    def put(self):
+        """
+        Create a new text entry.
+        """
+        data = request.json
+        return txt.create(data['key'], data['title'], data['text'])
+
+
+@api.route(TEXT_DELETE_EP)
+class TextDelete(Resource):
+    """
+    This class handles deleting text entries.
+    """
+    def delete(self, key):
+        """
+        Delete a text entry.
+        """
+        return txt.delete(key)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
