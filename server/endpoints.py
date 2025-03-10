@@ -84,7 +84,7 @@ class ManuscriptCreate(Resource):
                     "Missing required field(s): 'title' or 'text'.")
 
             # Call the manuscript creation function from data.manuscripts.
-            manuscript_id = manuscripts.create_simple_manuscript(
+            manuscript_id = manuscripts.create_manuscript(
                             author,
                             title,
                             text)
