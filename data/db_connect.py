@@ -58,6 +58,8 @@ def create(collection, doc, db=SE_DB):
     Insert a single doc into collection.
     """
     print(f'{db=}')
+
+    # returns an instance of pymongo.results.InsertOneResult
     return client[db][collection].insert_one(doc)
 
 

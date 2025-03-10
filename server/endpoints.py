@@ -13,6 +13,8 @@ import werkzeug.exceptions as wz
 
 import data.people as ppl
 import data.text as txt
+import data.manuscripts.manuscripts as manuscripts
+
 
 app = Flask(__name__)
 CORS(app)
@@ -35,10 +37,66 @@ TITLE = 'The Journal of API Technology'
 TITLE_EP = '/title'
 TITLE_RESP = 'Title'
 
+# ENDPOINTS FOR TEXT
 TEXT_DELETE_EP = '/text/delete'
 TEXT_DELETE_RESP = 'Text Deleted'
 TEXT_CREATE_EP = '/text/create'
 TEXT_COLLECTION = 'text'
+
+# --- Manuscript Endpoint Constants ---
+MANUSCRIPTS_EP = '/manuscripts'
+MANUSCRIPTS_CREATE_EP = f'{MANUSCRIPTS_EP}/create'
+
+
+MANUSCRIPT_CREATE_FLDS = api.model('CreateManuscript', {
+    'author': fields.String(
+        required=True,
+    ),
+    'title': fields.String(
+        required=True,
+    ),
+    'text': fields.String(
+        required=True,
+    ),
+})
+
+
+@api.route(MANUSCRIPTS_CREATE_EP)
+class ManuscriptCreate(Resource):
+    """
+    This class handles creating new manuscript entries.
+    """
+    @api.expect(MANUSCRIPT_CREATE_FLDS)
+    @api.response(HTTPStatus.CREATED, 'Manuscript successfully created')
+    @api.response(HTTPStatus.BAD_REQUEST, 'Missing required fields')
+    def put(self):
+        """
+        Create a new manuscript.
+        """
+        try:
+            # Use the provided author or default to the value in the model
+            author = request.json.get('author')
+            title = request.json.get('title')
+            text = request.json.get('text')
+
+            if not all([title, text]):
+                raise wz.BadRequest(
+                    "Missing required field(s): 'title' or 'text'.")
+
+            # Call the manuscript creation function from data.manuscripts.
+            manuscript_id = manuscripts.create_simple_manuscript(
+                            author,
+                            title,
+                            text)
+            if not manuscript_id:
+                raise wz.InternalServerError("Manuscript creation failed.")
+
+            return {
+                'message': 'Manuscript created successfully',
+                'manuscript_id': str(manuscript_id)
+            }, HTTPStatus.CREATED
+        except Exception as err:
+            raise wz.InternalServerError(f"Error creating manuscript: {err}")
 
 
 @api.route(HELLO_EP)
