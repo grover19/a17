@@ -107,8 +107,16 @@ def create_manuscript(author, title, text):
         "manuscript_history_id": manuscript_historyId
     }
 
+def delete_manuscript(manu_id: str):
 
 
+    print(f'_id {manu_id=}')
+
+    return dbc.delete(MANUSCRIPTS_COLLECT, {'_id': manu_id})
+
+
+def get_manuscript_history():
+    pass
 
 
 
