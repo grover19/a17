@@ -1,6 +1,8 @@
 """
 This module interfaces to our user data.
 """
+
+import data.db_connect as dbc
 # fields
 KEY = 'key'
 TITLE = 'title'
@@ -11,6 +13,7 @@ TEST_KEY = 'HomePage'
 SUBM_KEY = 'SubmissionsPage'
 DEL_KEY = 'DeletePage'
 TEXT_COLLECTION = 'text'
+
 
 text_dict = {
     TEST_KEY: {
@@ -32,7 +35,7 @@ def create():
     pass
 
 
-def delete():
+def delete(dict_key: str):
     print(f'{KEY=}, {dict_key=}')
     return dbc.delete(TEXT_COLLECTION, {KEY: dict_key})
 
