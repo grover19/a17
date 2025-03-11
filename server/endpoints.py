@@ -13,7 +13,7 @@ import werkzeug.exceptions as wz
 
 import data.people as ppl
 import data.text as txt
-import data.manuscripts.manuscripts as manuscripts
+import data.manuscripts.manuscripts as ms
 
 
 app = Flask(__name__)
@@ -86,16 +86,16 @@ class ManuscriptCreate(Resource):
                     "Missing required field(s): 'title' or 'text'.")
 
             # Call the manuscript creation function from data.manuscripts.
-            manuscript = manuscripts.create(
+            manu = ms.create_manuscript(
                             author,
                             title,
                             text)
-            if not manuscript:
+            if not manu:
                 raise wz.InternalServerError("Manuscript creation failed.")
 
             return {
                 'message': 'Manuscript created successfully',
-                'manuscript_id': str(manuscript)
+                'manuscript_id': manu[ms.MONGO_ID],
             }, HTTPStatus.CREATED
         except Exception as err:
             raise wz.InternalServerError(f"Error creating manuscript: {err}")
@@ -106,6 +106,7 @@ MANUSCRIPT_GET_FLDS = api.model('updateManuscript', {
         required=True
     )
 })
+
 
 @api.route(MANUSCRIPTS_GET_EP)  # Use a proper route
 class ManuscriptRetrieve(Resource):
@@ -127,16 +128,18 @@ class ManuscriptRetrieve(Resource):
                     "Missing required parameter: 'manuscript_id'.")
 
             # Fetch the manuscript from the database
-            manuscript = manuscripts.read_one_manuscript(manuscript_id)
+            manu = ms.read_one_manuscript(manuscript_id)
 
-            if not manuscript:
+            if not manu:
                 raise wz.NotFound(
                     f"No manuscript found for author '{manuscript_id}'.")
 
+            latest_manu = manu[ms.LATEST_VERSION]
+
             return {
-                'author': manuscript.get('author'),
-                'title': manuscript.get('title'),
-                'text': manuscript.get('text'),
+                'author': manu[ms.AUTHOR_NAME],
+                'title': latest_manu[ms.TITLE],
+                'text': latest_manu[ms.TEXT],
             }, HTTPStatus.OK
         except Exception as err:
             raise wz.InternalServerError(f"Error retrieving manuscript: {err}")
@@ -147,6 +150,7 @@ MANUSCRIPT_DELETE_FLDS = api.model('DeleteManuscript', {
         required=True
     )
 })
+
 
 @api.route(MANUSCRIPTS_DEL_EP)
 class ManuscriptDelete(Resource):
@@ -163,22 +167,23 @@ class ManuscriptDelete(Resource):
         try:
             manuscript_id = request.json.get('manuscript_id')
             if not manuscript_id:
-                raise wz.BadRequest("Missing required parameter: 'manuscript_id'.")
-            
+                raise wz.BadRequest(
+                    "Missing required parameter: 'manuscript_id'.")
+
             # Attempt to delete the manuscript from the database.
             # This assumes that `manuscripts.delete_manuscript` is a function
-            # that deletes the manuscript and returns a truthy value on success.
-            deleted = manuscripts.delete_manuscript(manuscript_id)
-            
+            # to delete the manuscript and returns a truthy value on success.
+            deleted = ms.delete_manuscript(manuscript_id)
+
             if not deleted:
-                raise wz.NotFound(f"No manuscript found for manuscript id '{manuscript_id}'.")
-            
+                raise wz.NotFound(
+                    f"No manuscript found '{manuscript_id}'.")
+
             return {
-                'message': 'Manuscript deleted successfully'
+                'message': 'Manuscript and its history deleted successfully'
             }, HTTPStatus.OK
         except Exception as err:
             raise wz.InternalServerError(f"Error deleting manuscript: {err}")
-
 
 
 @api.route(HELLO_EP)
