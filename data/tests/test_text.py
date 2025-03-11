@@ -34,12 +34,9 @@ def test_delete_exists():
     assert txt.DEL_KEY in texts
 
     #attempt to delete the text instance
-    final_val = texts.delete()
+    final_val = txt.delete(txt.DEL_KEY)
 
-    #verify the instance is deleted
-    assert final_val is True
-    texts = txt.read()
-    assert txt.DEL_KEY not in texts
+    assert txt.DEL_KEY not in final_val
 
 def test_delete_not_exists():
     # 2/2 tests for the text delete()

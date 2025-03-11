@@ -2,7 +2,7 @@
 This module interfaces to our user data.
 """
 
-import data.db_connect as dbc
+# import data.db_connect as dbc
 # fields
 KEY = 'key'
 TITLE = 'title'
@@ -37,7 +37,8 @@ def create():
 
 def delete(dict_key: str):
     print(f'{KEY=}, {dict_key=}')
-    return dbc.delete(TEXT_COLLECTION, {KEY: dict_key})
+    del text_dict[dict_key]
+    return text_dict
 
 
 def update(key: str, title: str, text: str):
