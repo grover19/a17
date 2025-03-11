@@ -33,7 +33,8 @@ def create():
 
 
 def delete():
-    pass
+    print(f'{KEY=}, {dict_key=}')
+    return dbc.delete(TEXT_COLLECTION, {KEY: dict_key})
 
 
 def update(key: str, title: str, text: str):
