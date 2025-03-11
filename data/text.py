@@ -1,20 +1,16 @@
 """
 This module interfaces to our user data.
 """
-
-import data.db_connect as dbc
-
 # fields
 KEY = 'key'
 TITLE = 'title'
 TEXT = 'text'
 EMAIL = 'email'
 
-TEXT_COLLECTION = 'text'  # Fixed typo here
-
 TEST_KEY = 'HomePage'
 SUBM_KEY = 'SubmissionsPage'
 DEL_KEY = 'DeletePage'
+TEXT_COLLECTION = 'text'
 
 text_dict = {
     TEST_KEY: {
@@ -32,51 +28,54 @@ text_dict = {
 }
 
 
-def create(key: str, title: str, text: str):
-    # Check if an entry with this key already exists in the database.
-    if dbc.read_one(TEXT_COLLECTION, {KEY: key}):
-        raise KeyError(f"Key '{key}' already exists in the database.")
-
-    # Build the document following our schema.
-    document = {KEY: key, TITLE: title, TEXT: text}
-
-    # Insert the document into the collection.
-    dbc.create(TEXT_COLLECTION, document)
-    return True
-
-
-def delete(dict_key: str):
-    print(f'{KEY=}, {dict_key=}')
-    return dbc.delete(TEXT_COLLECTION, {KEY: dict_key})
-
-
-def update():
+def create():
     pass
 
 
-def read() -> dict:
+def delete():
+    pass
+
+
+def update(key: str, title: str, text: str):
+    """
+    Update an existing page in text_dict.
+
+    Arguments:
+        key (str): The key identifying the page.
+        title (str): The new title of the page.
+        text (str): The new text content of the page.
+
+    Returns:
+        str: The key of the updated page.
+
+    Raises:
+        ValueError: If the key does not exist in text_dict.
+    """
+    if key not in text_dict:
+        raise ValueError(f'Updating non-existent page: {key=}')
+
+    text_dict[key] = {TITLE: title, TEXT: text}
+    return key
+
+
+def read():
     """
     Our contract:
         - No arguments.
-        - Returns a dictionary of text entries keyed on their key.
-        - Each key must map to another dictionary containing title and text.
+        - Returns a dictionary of users keyed on user email.
+        - Each user email must be the key for another dictionary.
     """
-    text_entries = dbc.read_dict(TEXT_COLLECTION, KEY)  # Fetch from MongoDB
-    if not text_entries:
-        text_entries = text_dict  # Fallback to default dictionary
-    print(f'{text_entries=}')  # Debug log
-    return text_entries
+    text = text_dict
+    return text
 
 
 def read_one(key: str) -> dict:
-    """
-    Retrieve a single text entry based on the given key.
-    If not found, return an empty dictionary.
-    """
-    result = dbc.read_one(TEXT_COLLECTION, {KEY: key})  # Fetch from MongoDB
-    if result:
-        return result
-    return {}
+    # This should take a key and return the page dictionary
+    # for that key. Return an empty dictionary of key not found.
+    result = {}
+    if key in text_dict:
+        result = text_dict[key]
+    return result
 
 
 def main():

@@ -13,7 +13,7 @@ import werkzeug.exceptions as wz
 
 import data.people as ppl
 import data.text as txt
-import data.manuscripts.manuscripts as manuscripts
+import data.manuscripts.manuscripts as ms
 
 
 app = Flask(__name__)
@@ -44,141 +44,96 @@ TEXT_CREATE_EP = '/text/create'
 TEXT_COLLECTION = 'text'
 
 # --- Manuscript Endpoint Constants ---
-MANUSCRIPTS_EP = '/manuscripts'
-MANUSCRIPTS_CREATE_EP = f'{MANUSCRIPTS_EP}/create'
-MANUSCRIPTS_GET_EP = f'{MANUSCRIPTS_EP}/GET'
-MANUSCRIPTS_DEL_EP = f'{MANUSCRIPTS_EP}/delete'
 
 
-MANUSCRIPT_CREATE_FLDS = api.model('CreateManuscript', {
-    'author': fields.String(
-        required=True,
-    ),
-    'title': fields.String(
-        required=True,
-    ),
-    'text': fields.String(
-        required=True,
-    ),
+# --- Manuscript Endpoint Constants ---
+MANUSCRIPTS_EP = "/manuscripts"
+MANUSCRIPTS_CREATE_EP = f"{MANUSCRIPTS_EP}/create"
+MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/GET/<id>"
+MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/delete/<id>"
+
+
+MANUSCRIPT_CREATE_FLDS = api.model("CreateManuscript", {
+    "author": fields.String(required=True),
+    "title": fields.String(required=True),
+    "text": fields.String(required=True),
 })
 
 
-@api.route(MANUSCRIPTS_CREATE_EP)
+@api.route(f'{MANUSCRIPTS_CREATE_EP}')
 class ManuscriptCreate(Resource):
     """
-    This class handles creating new manuscript entries.
+    Create a new manuscript entry.
     """
     @api.expect(MANUSCRIPT_CREATE_FLDS)
-    @api.response(HTTPStatus.CREATED, 'Manuscript successfully created')
-    @api.response(HTTPStatus.BAD_REQUEST, 'Missing required fields')
-    def put(self):
+    @api.response(HTTPStatus.CREATED, "Manuscript successfully created")
+    @api.response(HTTPStatus.BAD_REQUEST,
+                  "Missing required fields or invalid input")
+    def post(self):
         """
-        Create a new manuscript.
+        Create a manuscript.
         """
-        try:
-            # Use the provided author or default to the value in the model
-            author = request.json.get('author')
-            title = request.json.get('title')
-            text = request.json.get('text')
+        data = request.get_json()
+        author = data.get("author", "").strip()
+        title = data.get("title", "").strip()
+        text = data.get("text", "").strip()
 
-            if not all([title, text]):
-                raise wz.BadRequest(
-                    "Missing required field(s): 'title' or 'text'.")
+        if not author or not title or not text:
+            raise wz.BadRequest("Missing one or more required fields")
 
-            # Call the manuscript creation function from data.manuscripts.
-            manuscript = manuscripts.create(
-                            author,
-                            title,
-                            text)
-            if not manuscript:
-                raise wz.InternalServerError("Manuscript creation failed.")
+        manu = ms.create_manuscript(author, title, text)
+        if not manu:
+            raise wz.InternalServerError("Manuscript creation failed.")
+        return {
+            "message": "Manuscript created successfully",
+            "manuscript_id": manu[ms.MONGO_ID],
+        }, HTTPStatus.CREATED
 
-            return {
-                'message': 'Manuscript created successfully',
-                'manuscript_id': str(manuscript)
-            }, HTTPStatus.CREATED
-        except Exception as err:
-            raise wz.InternalServerError(f"Error creating manuscript: {err}")
-
-
-MANUSCRIPT_GET_FLDS = api.model('updateManuscript', {
-    "manuscript_id": fields.String(
-        required=True
-    )
-})
-
-@api.route(MANUSCRIPTS_GET_EP)  # Use a proper route
-class ManuscriptRetrieve(Resource):
-    """
-    This class handles retrieving manuscript entries by author name.
-    """
-    @api.expect(MANUSCRIPT_GET_FLDS)
-    @api.response(HTTPStatus.OK, 'Manuscript retrieved successfully')
-    @api.response(HTTPStatus.NOT_FOUND, 'Manuscript not found')
-    def put(self):
-        """
-        Retrieve a manuscript by the manuscript id.
-        """
-        try:
-            manuscript_id = request.json.get('manuscript_id')
-
-            if not manuscript_id:
-                raise wz.BadRequest(
-                    "Missing required parameter: 'manuscript_id'.")
-
-            # Fetch the manuscript from the database
-            manuscript = manuscripts.read_one_manuscript(manuscript_id)
-
-            if not manuscript:
-                raise wz.NotFound(
-                    f"No manuscript found for author '{manuscript_id}'.")
-
-            return {
-                'author': manuscript.get('author'),
-                'title': manuscript.get('title'),
-                'text': manuscript.get('text'),
-            }, HTTPStatus.OK
-        except Exception as err:
-            raise wz.InternalServerError(f"Error retrieving manuscript: {err}")
-
-
-MANUSCRIPT_DELETE_FLDS = api.model('DeleteManuscript', {
-    "manuscript_id": fields.String(
-        required=True
-    )
-})
 
 @api.route(MANUSCRIPTS_DEL_EP)
 class ManuscriptDelete(Resource):
     """
-    This class handles deleting manuscript entries by manuscript id.
+    Delete a manuscript entry by its manuscript id.
     """
-    @api.expect(MANUSCRIPT_DELETE_FLDS)
-    @api.response(HTTPStatus.OK, 'Manuscript deleted successfully')
-    @api.response(HTTPStatus.NOT_FOUND, 'Manuscript not found')
-    def delete(self):
+    def delete(self, id):
         """
         Delete a manuscript by its manuscript id.
         """
-        try:
-            manuscript_id = request.json.get('manuscript_id')
-            if not manuscript_id:
-                raise wz.BadRequest("Missing required parameter: 'manuscript_id'.")
-            
-            # Attempt to delete the manuscript from the database.
-            # This assumes that `manuscripts.delete_manuscript` is a function
-            # that deletes the manuscript and returns a truthy value on success.
-            deleted = manuscripts.delete_manuscript(manuscript_id)
-            
-            if not deleted:
-                raise wz.NotFound(f"No manuscript found for manuscript id '{manuscript_id}'.")
-            
-            return {
-                'message': 'Manuscript deleted successfully'
-            }, HTTPStatus.OK
-        except Exception as err:
-            raise wz.InternalServerError(f"Error deleting manuscript: {err}")
+        id = id.strip()
+        deleted = ms.delete_manuscript(id)
+        if not deleted:
+            raise wz.NotFound(f"No manuscript found with id '{id}'.")
+        return {
+            "message": "Manuscript and its history deleted successfully"
+        }, HTTPStatus.OK
 
+
+@api.route(MANUSCRIPTS_GET_EP)
+class ManuscriptRetrieve(Resource):
+    """
+    Retrieve a manuscript entry by its manuscript id.
+    """
+    @api.response(HTTPStatus.OK, "Manuscript retrieved successfully")
+    @api.response(HTTPStatus.BAD_REQUEST, "Missing or invalid manuscript id")
+    @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
+    def get(self, id):
+        """
+        Retrieve a manuscript by manuscript id.
+        """
+        id = id.strip()
+        # Optionally validate the manuscript_id as a MongoDB ObjectId.
+
+        manu = ms.read_one_manuscript(id)
+        if not manu:
+            raise wz.NotFound(f"No manuscript found with id '{id}'.")
+
+        # Assume the latest version is stored under ms.LATEST_VERSION.
+        latest_manu = manu.get(ms.LATEST_VERSION, {})
+        return {
+            "author": manu.get(ms.AUTHOR_NAME),
+            "title": latest_manu.get(ms.TITLE),
+            "text": latest_manu.get(ms.TEXT),
+        }, HTTPStatus.OK
 
 
 @api.route(HELLO_EP)
