@@ -1,5 +1,4 @@
 import data.db_connect as dbc
-client = dbc.connect_db()
 from datetime import datetime
 import  data.manuscripts.states as states  
 import data.people as ppl 
@@ -52,7 +51,6 @@ SET = '$set'
 # establishing a mongodb connection 
 dbc.connect_db() 
 
-
 def get_est_time():
     return datetime.now()
 
@@ -66,7 +64,6 @@ def create_mongo_id_object(doc_identifier):
     
     """
     return ObjectId(doc_identifier)
-
 
 
 # ------ HELPER FUNCTIONS ------------ 
@@ -130,7 +127,6 @@ def create_manuscript(author_name, title, text):
     update_dict = {
         MANUSCRIPT_HISTORY_FK: his_id
     }
-
 
     manu_updated = dbc.update(
         MANUSCRIPTS_COLLECT, 
