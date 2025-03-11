@@ -150,10 +150,14 @@ def delete_manuscript_history(his_id):
 
 def delete_manuscript(manu_id):
 
-    # MUST ALSO DELETE IT'S ASSOCIATED HISTORY!!  
-
+    # MUST ALSO DELETE IT'S ASSOCIATED HISTORY!!
     manu_id = ObjectId(manu_id)
     manu = dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_id })
+
+    # If manuscript doesn't exist, return 0
+    if not manu:
+        return 0
+
     his_id = manu[MANUSCRIPT_HISTORY_FK]
 
     # trigger 
@@ -162,16 +166,8 @@ def delete_manuscript(manu_id):
     manu_delete = dbc.delete(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_id}) 
                                   
     return manu_delete
-               
 
 
 def read_one_manuscript_history(his_id) -> dict:
     his_obj_id = create_mongo_id_object(his_obj_id)
     return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {MONGO_ID: his_obj_id})
-
-
-
-
-
-
-
