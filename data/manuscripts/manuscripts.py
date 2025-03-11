@@ -31,8 +31,6 @@ EDITOR_FK = 'editor_fk'
 EDITOR_NAME = 'editor_name'
 EDITOR_ROLE = 'role'
 EDITOR_COMMENTS = 'comments'
-AUTHOR_RESPONSE = 'author_response'  
-
 
 # --- MANUSCRIPT HISTORY COLLECT  --- # 
 MANUSCRIPT_FK = 'manuscript_id_fk'
