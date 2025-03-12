@@ -17,6 +17,7 @@ import data.manuscripts.manuscripts as ms
 
 
 app = Flask(__name__)
+
 CORS(app)
 api = Api(app)
 
@@ -67,8 +68,8 @@ class ManuscriptCreate(Resource):
     """
     @api.expect(MANUSCRIPT_CREATE_FLDS)
     @api.response(HTTPStatus.CREATED, "Manuscript successfully created")
-    @api.response(HTTPStatus.BAD_REQUEST,
-                  "Missing required fields or invalid input")
+    # @api.response(HTTPStatus.BAD_REQUEST,
+    #               "Missing required fields or invalid input")
     def post(self):
         """
         Create a manuscript.
@@ -84,10 +85,12 @@ class ManuscriptCreate(Resource):
         manu = ms.create_manuscript(author, title, text)
         if not manu:
             raise wz.InternalServerError("Manuscript creation failed.")
+
         return {
-            "message": "Manuscript created successfully",
-            "manuscript_id": manu[ms.MONGO_ID],
-        }, HTTPStatus.CREATED
+            "author": manu[ms.AUTHOR_NAME],
+            "title": manu[ms.LATEST_VERSION][ms.TITLE],
+            "text":  manu[ms.LATEST_VERSION][ms.TEXT]
+        }
 
 
 @api.route(MANUSCRIPTS_DEL_EP)
@@ -100,12 +103,7 @@ class ManuscriptDelete(Resource):
         Delete a manuscript by its manuscript id.
         """
         id = id.strip()
-        deleted = ms.delete_manuscript(id)
-        if not deleted:
-            raise wz.NotFound(f"No manuscript found with id '{id}'.")
-        return {
-            "message": "Manuscript and its history deleted successfully"
-        }, HTTPStatus.OK
+        return ms.delete_manuscript(id)
 
 
 @api.route(MANUSCRIPTS_GET_EP)
