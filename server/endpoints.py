@@ -87,6 +87,7 @@ class ManuscriptCreate(Resource):
             raise wz.InternalServerError("Manuscript creation failed.")
 
         return {
+            'id': manu['_id'],
             "author": manu[ms.AUTHOR_NAME],
             "title": manu[ms.LATEST_VERSION][ms.TITLE],
             "text":  manu[ms.LATEST_VERSION][ms.TEXT]
