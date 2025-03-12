@@ -38,12 +38,6 @@ TITLE = 'The Journal of API Technology'
 TITLE_EP = '/title'
 TITLE_RESP = 'Title'
 
-# ENDPOINTS FOR TEXT
-TEXT_DELETE_EP = '/text/delete'
-TEXT_DELETE_RESP = 'Text Deleted'
-TEXT_CREATE_EP = '/text/create'
-TEXT_COLLECTION = 'text'
-
 # --- Manuscript Endpoint Constants ---
 
 
@@ -249,6 +243,12 @@ class PeopleCreate(Resource):
             raise wz.NotAcceptable(f'Could not add person: {err=}')
         return {MESSAGE: 'Person added!', RETURN: ret}
 
+
+
+# ENDPOINTS FOR TEXT
+TEXT_DELETE_EP = '/text/delete'
+TEXT_CREATE_EP = '/text/create'
+TEXT_GET = 'text/get/<string:key>'
 
 @api.route('/text/<string:key>')
 class TextOneResource(Resource):

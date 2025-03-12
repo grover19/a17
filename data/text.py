@@ -2,6 +2,9 @@
 This module interfaces to our user data.
 """
 # fields
+import data.db_connect as dbc
+from bson.objectid import ObjectId
+
 KEY = 'key'
 TITLE = 'title'
 TEXT = 'text'
@@ -27,9 +30,17 @@ text_dict = {
     },
 }
 
+# set up db client 
+dbc.connect_db()
 
-def create():
-    pass
+def create(key, title, text):
+    document= {KEY:key, TITLE:title, TEXT:text}
+    try: 
+        text_inserted = dbc.create(TEXT_COLLECTION, document)
+
+    except Exception as e: 
+        print(f"Create Text Error {str(e)}")
+
 
 
 def delete():
