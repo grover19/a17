@@ -75,11 +75,8 @@ def test_text_read_one(mock_read):
     assert 'text' in resp_json
     assert resp_json['title'] == 'Home Page'
     assert resp_json['text'] == 'Sample content for testing.'
-
-
-
-
-
+    
+    
 # ------------------------ endpoint for manuscripts -------------------------
 
 # ------------------------- endpoint for create ------------------------------- 
@@ -114,5 +111,3 @@ def test_create_manuscripts(mock_read):
     assert resp_json['author'] == MOCK_AUTHOR 
     assert resp_json['title'] == MOCK_TITLE
     assert resp_json['text'] == MOCK_TEXT
-
-    print(resp_json)

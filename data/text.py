@@ -1,6 +1,8 @@
 """
 This module interfaces to our user data.
 """
+
+# import data.db_connect as dbc
 # fields
 import data.db_connect as dbc
 
@@ -13,6 +15,7 @@ TEST_KEY = 'HomePage'
 SUBM_KEY = 'SubmissionsPage'
 DEL_KEY = 'DeletePage'
 TEXT_COLLECTION = 'text'
+
 
 text_dict = {
     TEST_KEY: {
