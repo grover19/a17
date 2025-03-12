@@ -48,8 +48,11 @@ def create(key, title, text):
         print(f"Create Text Error {str(e)}")
 
 
-def delete():
-    pass
+def delete(key):
+    text_collect = dbc.read_one(TEXT_COLLECTION, {KEY: key})
+    if not text_collect:
+        return 0
+    return dbc.delete(TEXT_COLLECTION, {KEY: key})
 
 
 def update(key: str, title: str, text: str):
