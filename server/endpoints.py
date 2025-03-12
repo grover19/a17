@@ -247,7 +247,7 @@ class PeopleCreate(Resource):
 # ENDPOINTS FOR TEXT
 TEXT_DELETE_EP = '/text/delete'
 TEXT_CREATE_EP = '/text/create'
-TEXT_GET = '/text/get/<string:key>'
+TEXT_GET = '/text/<string:key>'
 
 
 @api.route(TEXT_GET)
@@ -259,9 +259,11 @@ class TextOneResource(Resource):
         """
         Retrieve a single text entry by key.
         """
-        entry = txt.read_one(key)
-        if entry:
-            return entry, HTTPStatus.OK
+        test_doc = txt.read_one(key)
+        if test_doc:
+            return {
+                "title": test_doc['title'],
+                "text": test_doc['text']}, HTTPStatus.OK
         else:
             raise wz.NotFound(f'No text entry found for key: {key}')
 
