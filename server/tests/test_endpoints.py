@@ -85,3 +85,19 @@ test_manu_create_payload = {
     'title' : MOCK_TITLE, 
     'text' : MOCK_TEXT
 }
+
+@patch('data.manuscripts.manuscripts.create_manuscript', autospec=True, return_value={
+    'manuscript_id': str(mock_manu['_id'])
+}) 
+
+def test_create_manuscripts(mock_read): 
+
+    resp = TEST_CLIENT.post('/manuscripts/create', json = test_manu_create_payload)
+    assert resp.status_code == HTTPStatus.CREATED
+    resp_json = resp.get_json()
+
+    assert 'manuscript_id' in resp_json
+    assert resp_json['manuscript_id'] == mock_manu['_id']
+
+# clean up 
+ms.delete_manuscript(mock_manu['_id'])
