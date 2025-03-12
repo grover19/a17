@@ -244,13 +244,13 @@ class PeopleCreate(Resource):
         return {MESSAGE: 'Person added!', RETURN: ret}
 
 
-
 # ENDPOINTS FOR TEXT
 TEXT_DELETE_EP = '/text/delete'
 TEXT_CREATE_EP = '/text/create'
-TEXT_GET = 'text/get/<string:key>'
+TEXT_GET = '/text/get/<string:key>'
 
-@api.route('/text/<string:key>')
+
+@api.route(TEXT_GET)
 class TextOneResource(Resource):
     """
     This class handles retrieving a single text entry.
@@ -281,7 +281,12 @@ class TextCreate(Resource):
         Create a new text entry.
         """
         data = request.json
-        return txt.create(data['key'], data['title'], data['text'])
+        text_doc = txt.create(data['key'], data['title'], data['text'])
+        return {
+            "key": text_doc['key'],
+            "title": text_doc['title'],
+            'text': text_doc['text']
+        }
 
 
 @api.route(TEXT_DELETE_EP)

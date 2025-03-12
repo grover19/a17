@@ -3,7 +3,6 @@ This module interfaces to our user data.
 """
 # fields
 import data.db_connect as dbc
-from bson.objectid import ObjectId
 
 KEY = 'key'
 TITLE = 'title'
@@ -30,17 +29,23 @@ text_dict = {
     },
 }
 
-# set up db client 
+# set up db client
 dbc.connect_db()
 
+
 def create(key, title, text):
-    document= {KEY:key, TITLE:title, TEXT:text}
-    try: 
-        text_inserted = dbc.create(TEXT_COLLECTION, document)
+    document = {KEY: key, TITLE: title, TEXT: text}
+    try:
+        # check if key already exists
+        if dbc.read_one(TEXT_COLLECTION, {KEY: key}):
+            raise KeyError(f'{key} already exists')
 
-    except Exception as e: 
+        dbc.create(TEXT_COLLECTION, document)
+
+        return dbc.read_one(TEXT_COLLECTION, {KEY: key})
+
+    except Exception as e:
         print(f"Create Text Error {str(e)}")
-
 
 
 def delete():
@@ -83,10 +88,10 @@ def read():
 def read_one(key: str) -> dict:
     # This should take a key and return the page dictionary
     # for that key. Return an empty dictionary of key not found.
-    result = {}
-    if key in text_dict:
-        result = text_dict[key]
-    return result
+    text_doc = dbc.read_one(TEXT_COLLECTION, {KEY: key})
+    if not text_doc:
+        return {}
+    return text_doc
 
 
 def main():
