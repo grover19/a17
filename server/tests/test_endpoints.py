@@ -71,3 +71,17 @@ def test_text_read_one(mock_read):
     assert 'text' in resp_json
     assert resp_json['title'] == 'Home Page'
     assert resp_json['text'] == 'Sample content for testing.'
+
+
+# TODO: fix the test for this
+
+MOCK_AUTHOR = 'John Doe' 
+MOCK_TITLE = 'this is my manuscript'
+MOCK_TEXT = 'someText'
+mock_manu = ms.create_manuscript(MOCK_AUTHOR, MOCK_TITLE, MOCK_TEXT)
+
+test_manu_create_payload = {
+    'author' : MOCK_AUTHOR, 
+    'title' : MOCK_TITLE, 
+    'text' : MOCK_TEXT
+}
