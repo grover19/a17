@@ -135,13 +135,17 @@ def create_manuscript(author_name, title, text):
     )
 
     if  not manu_updated.acknowledged: 
+        print('nope')
         raise Exception("Failed to create manuscript document.")
+
 
     return dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_id})
 
 
 def read_one_manuscript(manu_id) :
     manu_obj_id = ObjectId(manu_id)
+    if not manu_obj_id: 
+        return None
     return dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_obj_id})
 
 
