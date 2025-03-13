@@ -215,6 +215,7 @@ class Person(Resource):
         else:
             raise wz.NotFound(f'No such person: {email}')  # 404
 
+
 PEOPLE_CREATE_FLDS = api.model('AddNewPeopleEntry', {
     ppl.NAME: fields.String,
     ppl.EMAIL: fields.String,
