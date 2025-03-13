@@ -44,7 +44,7 @@ TITLE_RESP = 'Title'
 # --- Manuscript Endpoint Constants ---
 MANUSCRIPTS_EP = "/manuscripts"
 MANUSCRIPTS_CREATE_EP = f"{MANUSCRIPTS_EP}/create"
-MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/GET/<id>"
+MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/<id>"
 MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/<id>"
 
 
@@ -77,11 +77,11 @@ class ManuscriptCreate(Resource):
             raise wz.BadRequest("Missing one or more required fields")
 
         manu = ms.create_manuscript(author, title, text)
+        print(manu)
         if not manu:
             raise wz.InternalServerError("Manuscript creation failed.")
 
         return {
-            'id': manu['_id'],
             "author": manu[ms.AUTHOR_NAME],
             "title": manu[ms.LATEST_VERSION][ms.TITLE],
             "text":  manu[ms.LATEST_VERSION][ms.TEXT]
@@ -121,12 +121,12 @@ class ManuscriptRetrieve(Resource):
             raise wz.NotFound(f"No manuscript found with id '{id}'.")
 
         # Assume the latest version is stored under ms.LATEST_VERSION.
-        latest_manu = manu.get(ms.LATEST_VERSION, {})
+        latest_manu = manu['latest_version']
         return {
-            "author": manu.get(ms.AUTHOR_NAME),
-            "title": latest_manu.get(ms.TITLE),
+            "author": manu[ms.AUTHOR_NAME],
+            "title": latest_manu[ms.TITLE],
             "text": latest_manu.get(ms.TEXT),
-        }, HTTPStatus.OK
+        }
 
 
 @api.route(HELLO_EP)
