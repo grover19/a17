@@ -17,6 +17,7 @@ import data.manuscripts.manuscripts as ms
 
 
 app = Flask(__name__)
+
 CORS(app)
 api = Api(app)
 
@@ -37,12 +38,6 @@ TITLE = 'The Journal of API Technology'
 TITLE_EP = '/title'
 TITLE_RESP = 'Title'
 
-# ENDPOINTS FOR TEXT
-TEXT_DELETE_EP = '/text/delete'
-TEXT_DELETE_RESP = 'Text Deleted'
-TEXT_CREATE_EP = '/text/create'
-TEXT_COLLECTION = 'text'
-
 # --- Manuscript Endpoint Constants ---
 
 
@@ -50,7 +45,7 @@ TEXT_COLLECTION = 'text'
 MANUSCRIPTS_EP = "/manuscripts"
 MANUSCRIPTS_CREATE_EP = f"{MANUSCRIPTS_EP}/create"
 MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/GET/<id>"
-MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/delete/<id>"
+MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/<id>"
 
 
 MANUSCRIPT_CREATE_FLDS = api.model("CreateManuscript", {
@@ -67,8 +62,8 @@ class ManuscriptCreate(Resource):
     """
     @api.expect(MANUSCRIPT_CREATE_FLDS)
     @api.response(HTTPStatus.CREATED, "Manuscript successfully created")
-    @api.response(HTTPStatus.BAD_REQUEST,
-                  "Missing required fields or invalid input")
+    # @api.response(HTTPStatus.BAD_REQUEST,
+    #               "Missing required fields or invalid input")
     def post(self):
         """
         Create a manuscript.
@@ -84,10 +79,13 @@ class ManuscriptCreate(Resource):
         manu = ms.create_manuscript(author, title, text)
         if not manu:
             raise wz.InternalServerError("Manuscript creation failed.")
+
         return {
-            "message": "Manuscript created successfully",
-            "manuscript_id": manu[ms.MONGO_ID],
-        }, HTTPStatus.CREATED
+            'id': manu['_id'],
+            "author": manu[ms.AUTHOR_NAME],
+            "title": manu[ms.LATEST_VERSION][ms.TITLE],
+            "text":  manu[ms.LATEST_VERSION][ms.TEXT]
+        }
 
 
 @api.route(MANUSCRIPTS_DEL_EP)
@@ -100,12 +98,7 @@ class ManuscriptDelete(Resource):
         Delete a manuscript by its manuscript id.
         """
         id = id.strip()
-        deleted = ms.delete_manuscript(id)
-        if not deleted:
-            raise wz.NotFound(f"No manuscript found with id '{id}'.")
-        return {
-            "message": "Manuscript and its history deleted successfully"
-        }, HTTPStatus.OK
+        return ms.delete_manuscript(id)
 
 
 @api.route(MANUSCRIPTS_GET_EP)
@@ -251,7 +244,13 @@ class PeopleCreate(Resource):
         return {MESSAGE: 'Person added!', RETURN: ret}
 
 
-@api.route('/text/<string:key>')
+# ENDPOINTS FOR TEXT
+TEXT_DELETE_EP = '/text/delete'
+TEXT_CREATE_EP = '/text/create'
+TEXT_GET = '/text/<string:key>'
+
+
+@api.route(TEXT_GET)
 class TextOneResource(Resource):
     """
     This class handles retrieving a single text entry.
@@ -260,9 +259,11 @@ class TextOneResource(Resource):
         """
         Retrieve a single text entry by key.
         """
-        entry = txt.read_one(key)
-        if entry:
-            return entry, HTTPStatus.OK
+        test_doc = txt.read_one(key)
+        if test_doc:
+            return {
+                "title": test_doc['title'],
+                "text": test_doc['text']}, HTTPStatus.OK
         else:
             raise wz.NotFound(f'No text entry found for key: {key}')
 
@@ -282,7 +283,12 @@ class TextCreate(Resource):
         Create a new text entry.
         """
         data = request.json
-        return txt.create(data['key'], data['title'], data['text'])
+        text_doc = txt.create(data['key'], data['title'], data['text'])
+        return {
+            "key": text_doc['key'],
+            "title": text_doc['title'],
+            'text': text_doc['text']
+        }
 
 
 @api.route(TEXT_DELETE_EP)
