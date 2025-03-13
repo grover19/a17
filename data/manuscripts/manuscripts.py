@@ -135,7 +135,7 @@ def create_manuscript(author_name, title, text):
     )
 
     if  not manu_updated.acknowledged: 
-        print('nope')
+        return None 
         raise Exception("Failed to create manuscript document.")
 
 
