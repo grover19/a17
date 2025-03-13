@@ -61,12 +61,27 @@ def test_read_one_not_found(mock_read):
 
 
 @patch('data.people.delete', autospec=True, return_value='deleted')
-def test_delete_person_success(mock_delete):
-    email = "delete@nyu.edu"
-    resp = TEST_CLIENT.delete(f'{ep.PEOPLE_EP}/{email}')
+def test_delete_person_success():
+    test_user = {
+        "name": "John Doe",
+        "email": "testing@nyu.com",
+        "affiliation": "Columbia",
+        "roles": "ED"
+    }
+
+    # Create
+    resp = TEST_CLIENT.put(f'{ep.PEOPLE_EP}/create', json=test_user)
     assert resp.status_code == OK
+
+    # Delete
+    resp = TEST_CLIENT.delete(f'{ep.PEOPLE_EP}/{test_user["email"]}')
+    assert resp.status_code == OK
+
+    # Check JSON
     resp_json = resp.get_json()
-    assert resp_json == {'Deleted': 'deleted'}
+    # Should return the actual email now, e.g. {'Deleted': 'testing@nyu.com'}
+    assert resp_json == {'Deleted': test_user["email"]}
+
 
 
 @patch('data.text.read_one', autospec=True, return_value={

@@ -211,10 +211,9 @@ class Person(Resource):
         """
         ret = ppl.delete(email)
         if ret is not None:
-            return {'Deleted': ret}
+            return {'Deleted': ret}     # 200 OK
         else:
-            raise wz.NotFound(f'No such person: {email}')
-
+            raise wz.NotFound(f'No such person: {email}')  # 404
 
 PEOPLE_CREATE_FLDS = api.model('AddNewPeopleEntry', {
     ppl.NAME: fields.String,
