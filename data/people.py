@@ -60,12 +60,10 @@ def exists(email: str) -> bool:
 def delete(email: str):
     print(f'{EMAIL=}, {email=}')
     deleted_count = dbc.delete(PEOPLE_COLLECT, {EMAIL: email})
-    # If exactly one record was deleted, return the email. Otherwise return None.
     if deleted_count == 1:
         return email
     else:
         return None
-
 
 
 def is_valid_person(name: str, affiliation: str, email: str,
