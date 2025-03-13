@@ -45,7 +45,8 @@ TITLE_RESP = 'Title'
 MANUSCRIPTS_EP = "/manuscripts"
 MANUSCRIPTS_CREATE_EP = f"{MANUSCRIPTS_EP}/create"
 MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/<id>"
-MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/<id>"
+MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/delete/<id>"
+MANUSCRIPTS_COLLECT = '/manuscripts'
 
 
 MANUSCRIPT_CREATE_FLDS = api.model("CreateManuscript", {
@@ -62,8 +63,6 @@ class ManuscriptCreate(Resource):
     """
     @api.expect(MANUSCRIPT_CREATE_FLDS)
     @api.response(HTTPStatus.CREATED, "Manuscript successfully created")
-    # @api.response(HTTPStatus.BAD_REQUEST,
-    #               "Missing required fields or invalid input")
     def post(self):
         """
         Create a manuscript.
@@ -142,6 +141,27 @@ class HelloWorld(Resource):
         return {HELLO_RESP: HELLO_RESP}
 
 
+JOURNAL_TITLE = '/title'
+
+
+@api.route(JOURNAL_TITLE)
+class JournalTitle(Resource):
+    """
+    The purpose of the HelloWorld class is to have a simple test to see if the
+    app is working at all.
+    """
+    def get(self):
+        """
+        A trivial endpoint to see if the server is running.
+        """
+        return {
+            TITLE_RESP: TITLE,
+            EDITOR_RESP: EDITOR,
+            DATE_RESP: DATE,
+            PUBLISHER_RESP: PUBLISHER,
+        }
+
+
 @api.route(ENDPOINT_EP)
 class Endpoints(Resource):
     """
@@ -156,22 +176,22 @@ class Endpoints(Resource):
         return {ENDPOINT_RESP: endpoints}
 
 
-@api.route(TITLE_EP)
-class JournalTitle(Resource):
-    """
-    This class handles creating, reading, updating
-    and deleting the journal title.
-    """
-    def get(self):
-        """
-        Retrieve the journal title.
-        """
-        return {
-            TITLE_RESP: TITLE,
-            EDITOR_RESP: EDITOR,
-            DATE_RESP: DATE,
-            PUBLISHER_RESP: PUBLISHER,
-        }
+# @api.route(TITLE_EP)
+# class JournalTitle(Resource):
+#     """
+#     This class handles creating, reading, updating
+#     and deleting the journal title.
+#     """
+#     def get(self):
+#         """
+#         Retrieve the journal title.
+#         """
+#         return {
+#             TITLE_RESP: TITLE,
+#             EDITOR_RESP: EDITOR,
+#             DATE_RESP: DATE,
+#             PUBLISHER_RESP: PUBLISHER,
+#         }
 
 
 @api.route(PEOPLE_EP)
@@ -193,6 +213,7 @@ class Person(Resource):
     This class handles creating, reading, updating
     and deleting journal people.
     """
+
     def get(self, email):
         """
         Retrieve a journal person.
@@ -248,7 +269,7 @@ class PeopleCreate(Resource):
 
 
 # ENDPOINTS FOR TEXT
-TEXT_DELETE_EP = '/text/delete'
+TEXT_DELETE_EP = '/text/delete/<string:key>'
 TEXT_CREATE_EP = '/text/create'
 TEXT_GET = '/text/<string:key>'
 

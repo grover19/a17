@@ -1,7 +1,8 @@
 {
     "_id": ObjectId("..."),
     "author": "John Doe",           // AUTHOR_NAME
-    "manuscript_created": <Date>,   // MANUSCRIPT_CREATED
+    // A reference to a document in the "manuscript_history" collection
+    "manuscript_history_fk": ObjectId("...")
 
     "latest_version": {
         "state": "Draft",          // e.g. states.DEFAULT_STATE
@@ -24,8 +25,7 @@
         }
     }, 
     
-    // A reference to a document in the "manuscript_history" collection
-    "manuscript_history_fk": ObjectId("...")
+
 }
 
 

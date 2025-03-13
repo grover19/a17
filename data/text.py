@@ -85,6 +85,7 @@ def read():
         - Each user email must be the key for another dictionary.
     """
     text = text_dict
+    # return dbc.read(TEXT_COLLECTION)
     return text
 
 

@@ -88,7 +88,6 @@ def create_simple_manuscript(author_name,  title, text):
 
     manu_template = {
     AUTHOR_NAME: author_name, 
-    MANUSCRIPT_CREATED: get_est_time(),
     LATEST_VERSION: 
         {
             STATE: states.DEFAULT_STATE,  # initial state can be 'Draft'
@@ -108,6 +107,8 @@ def create_simple_manuscript(author_name,  title, text):
     
     return manu_insert 
 
+def read_all_manuscripts(): 
+    return dbc.read(MANUSCRIPTS_COLLECT)
 
 
 def create_manuscript(author_name, title, text): 
@@ -144,9 +145,10 @@ def create_manuscript(author_name, title, text):
 
 def read_one_manuscript(manu_id) :
     manu_obj_id = ObjectId(manu_id)
-    if not manu_obj_id: 
-        return None
-    return dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_obj_id})
+    manu = dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_obj_id})
+    if not manu: 
+        return None 
+    return manu
 
 
 def delete_manuscript_history(his_id):
@@ -160,6 +162,7 @@ def delete_manuscript(manu_id):
 
     manu_id = ObjectId(manu_id)
     manu = dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_id })
+    
     if not manu: 
         return False 
     his_id = manu[MANUSCRIPT_HISTORY_FK]

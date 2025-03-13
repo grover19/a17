@@ -39,71 +39,6 @@ def test_title():
     assert len(resp_json[ep.TITLE_RESP]) > 0
 
 
-@patch('data.people.read', autospec=True,
-       return_value={'id': {NAME: 'Joe Schmoe'}})
-def test_read(mock_read):
-    resp = TEST_CLIENT.get(ep.PEOPLE_EP)
-    assert resp.status_code == OK
-    resp_json = resp.get_json()
-    for _id, person in resp_json.items():
-        assert isinstance(_id, str)
-        assert len(_id) > 0
-        assert NAME in person
-
-
-@patch('data.people.read_one', autospec=True,
-       return_value={NAME: 'Joe Schmoe'})
-def test_read_one(mock_read):
-    resp = TEST_CLIENT.get(f'{ep.PEOPLE_EP}/mock_id')
-    assert resp.status_code == OK
-
-
-@patch('data.people.read_one', autospec=True, return_value=None)
-def test_read_one_not_found(mock_read):
-    resp = TEST_CLIENT.get(f'{ep.PEOPLE_EP}/mock_id')
-    assert resp.status_code == NOT_FOUND
-
-
-@patch('data.people.create', autospec=True,
-       return_value='testing@nyu.edu')
-@patch('data.people.delete', autospec=True,
-       return_value='testing@nyu.edu')
-def test_delete_person_success(mock_create, mock_delete):
-    test_user = {
-        "name": "John Doe",
-        "email": "testing@nyu.edu",
-        "affiliation": "Columbia",
-        "roles": "ED"
-    }
-
-    # Create
-    resp = TEST_CLIENT.put(f'{ep.PEOPLE_EP}/create', json=test_user)
-    assert resp.status_code == OK
-
-    # Delete
-    resp = TEST_CLIENT.delete(f'{ep.PEOPLE_EP}/{test_user["email"]}')
-    assert resp.status_code == OK
-
-    resp_json = resp.get_json()
-    assert resp_json == {'Deleted': test_user["email"]}
-
-
-@patch('data.text.read_one', autospec=True, return_value={
-    'title': 'Home Page',
-    'text': 'Sample content for testing.'
-})
-
-def test_text_read_one(mock_read):
-    resp = TEST_CLIENT.get(f'/text/HomePage')
-    assert resp.status_code == OK
-    resp_json = resp.get_json()
-    print(resp_json)
-    assert 'title' in resp_json
-    assert 'text' in resp_json
-    assert resp_json['title'] == 'Home Page'
-    assert resp_json['text'] == 'Sample content for testing.'
-
-
 # ------------------------ endpoint for manuscripts -------------------------
 
 # -------- endpoint for create -----------------
@@ -221,7 +156,7 @@ def test_delete_manuscript_endpoint(mock_delete_manuscript, mock_create_manuscri
     manuscript_id = str(manuscript['_id'])
     
     # Send a DELETE request 
-    response = TEST_CLIENT.delete(f"/manuscripts/{manuscript_id}")
+    response = TEST_CLIENT.delete(f"/manuscripts/delete/{manuscript_id}")
     
     # Assert that the response status is HTTP OK.
     assert response.status_code == HTTPStatus.OK
@@ -240,7 +175,7 @@ def test_delete_manuscript_endpoint_not_found(mock_create_manuscript):
     dne_id = ObjectId()
     
     # Send a DELETE request 
-    response = TEST_CLIENT.delete(f"/manuscripts/{dne_id}")
+    response = TEST_CLIENT.delete(f"/manuscripts/delete/{dne_id}")
     
     # Assert that the response status is HTTP OK.
     assert response.status_code == HTTPStatus.OK
@@ -252,3 +187,103 @@ def test_delete_manuscript_endpoint_not_found(mock_create_manuscript):
     # Check that the deletion function indicated success (non-zero value).
     assert data == 0 
 
+
+# ------------------------ endpoint for people -------------------------
+@patch('data.people.read', autospec=True,
+       return_value={'id': {NAME: 'Joe Schmoe'}})
+def test_read(mock_read):
+    resp = TEST_CLIENT.get(ep.PEOPLE_EP)
+    assert resp.status_code == OK
+    resp_json = resp.get_json()
+    for _id, person in resp_json.items():
+        assert isinstance(_id, str)
+        assert len(_id) > 0
+        assert NAME in person
+
+
+@patch('data.people.read_one', autospec=True,
+       return_value={NAME: 'Joe Schmoe'})
+def test_read_one(mock_read):
+    resp = TEST_CLIENT.get(f'{ep.PEOPLE_EP}/mock_id')
+    assert resp.status_code == OK
+
+
+@patch('data.people.read_one', autospec=True, return_value=None)
+def test_read_one_not_found(mock_read):
+    resp = TEST_CLIENT.get(f'{ep.PEOPLE_EP}/mock_id')
+    assert resp.status_code == NOT_FOUND
+
+
+@patch('data.people.create', autospec=True,
+       return_value='testing@nyu.edu')
+@patch('data.people.delete', autospec=True,
+       return_value='testing@nyu.edu')
+def test_delete_person(mock_create, mock_delete):
+    test_user = {
+        "name": "John Doe",
+        "email": "testing@nyu.edu",
+        "affiliation": "Columbia",
+        "roles": "ED"
+    }
+
+    # Create
+    resp = TEST_CLIENT.put(f'{ep.PEOPLE_EP}/create', json=test_user)
+    assert resp.status_code == OK
+
+    # Delete
+    resp = TEST_CLIENT.delete(f'{ep.PEOPLE_EP}/{test_user["email"]}')
+    assert resp.status_code == OK
+
+    resp_json = resp.get_json()
+    assert resp_json == {'Deleted': test_user["email"]}
+
+
+
+
+# --------------------- endpoint for TEXT _______________________
+@patch('data.text.create', autospec=True)
+def test_text_create(mock_create):
+    """
+    Test the PUT endpoint to create a text entry.
+    """
+    # Input payload for creation.
+    payload = {
+        "key": "testkey",
+        "title": "Test Title",
+        "text": "Test text"
+    }
+    
+    # Configure the mock to return the same payload.
+    mock_create.return_value = {
+        "key": payload["key"],
+        "title": payload["title"],
+        "text": payload["text"]
+    }
+    
+    # Send PUT request to the TEXT_CREATE_EP endpoint.
+    resp = TEST_CLIENT.put(ep.TEXT_CREATE_EP, json=payload)
+    
+    # Expect a 200 OK (or HTTPStatus.OK) response.
+    assert resp.status_code == HTTPStatus.OK
+    
+    # Parse the JSON response.
+    data = resp.get_json()
+    assert data["key"] == payload["key"]
+    assert data["title"] == payload["title"]
+    assert data["text"] == payload["text"]
+
+
+@patch('data.text.read_one', autospec=True, return_value={
+    'title': 'Home Page',
+    'text': 'Sample content for testing.'
+})
+def test_text_read_one(mock_read):
+    resp = TEST_CLIENT.get(f'/text/HomePage')
+    assert resp.status_code == OK
+    resp_json = resp.get_json()
+    print(resp_json)
+    assert 'title' in resp_json
+    assert 'text' in resp_json
+    assert resp_json['title'] == 'Home Page'
+    assert resp_json['text'] == 'Sample content for testing.'
+    pass

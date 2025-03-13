@@ -5,7 +5,7 @@ We may be required to use a new database at any point.
 import os
 
 import pymongo as pm
-
+# from bson.objectid import ObjectId
 LOCAL = "0"
 CLOUD = "1"
 
@@ -98,8 +98,25 @@ def read(collection, db=SE_DB, no_id=True) -> list:
             del doc[MONGO_ID]
         else:
             convert_mongo_id(doc)
-        ret.append(doc)
+
+    ret.append(doc)
     return ret
+
+# def read(collection, db=SE_DB, no_id=True) -> list:
+#     """
+#     Returns a list from the db.
+#     For each document, if a field's value is an ObjectId,
+#     convert it to a string.
+#     """
+#     ret = []
+#     for doc in client[db][collection].find():
+#         # Iterate over a list of keys
+#         for key in list(doc.keys()):
+#             if isinstance(doc[key], ObjectId):
+#                 doc[key] = str(doc[key])
+
+#         ret.append(doc)
+#     return ret
 
 
 def read_dict(collection, key, db=SE_DB, no_id=True) -> dict:
