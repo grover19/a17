@@ -206,11 +206,14 @@ class Person(Resource):
     @api.response(HTTPStatus.OK, 'Success.')
     @api.response(HTTPStatus.NOT_FOUND, 'No such person.')
     def delete(self, email):
+        """
+        Delete a journal person.
+        """
         ret = ppl.delete(email)
         if ret is not None:
-            return {'Deleted': ret}
+            return {'Deleted': ret}     # 200 OK
         else:
-            raise wz.NotFound(f'No such person: {email}')
+            raise wz.NotFound(f'No such person: {email}')  # 404
 
 
 PEOPLE_CREATE_FLDS = api.model('AddNewPeopleEntry', {

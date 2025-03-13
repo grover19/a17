@@ -62,6 +62,29 @@ def test_read_one_not_found(mock_read):
     assert resp.status_code == NOT_FOUND
 
 
+@patch('data.people.create', autospec=True,
+       return_value='testing@nyu.edu')
+@patch('data.people.delete', autospec=True,
+       return_value='testing@nyu.edu')
+def test_delete_person_success(mock_create, mock_delete):
+    test_user = {
+        "name": "John Doe",
+        "email": "testing@nyu.edu",
+        "affiliation": "Columbia",
+        "roles": "ED"
+    }
+
+    # Create
+    resp = TEST_CLIENT.put(f'{ep.PEOPLE_EP}/create', json=test_user)
+    assert resp.status_code == OK
+
+    # Delete
+    resp = TEST_CLIENT.delete(f'{ep.PEOPLE_EP}/{test_user["email"]}')
+    assert resp.status_code == OK
+
+    resp_json = resp.get_json()
+    assert resp_json == {'Deleted': test_user["email"]}
+
 
 @patch('data.text.read_one', autospec=True, return_value={
     'title': 'Home Page',
@@ -77,9 +100,6 @@ def test_text_read_one(mock_read):
     assert 'text' in resp_json
     assert resp_json['title'] == 'Home Page'
     assert resp_json['text'] == 'Sample content for testing.'
-
-
-
 
 
 # ------------------------ endpoint for manuscripts -------------------------
