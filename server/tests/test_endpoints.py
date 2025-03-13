@@ -77,9 +77,7 @@ def test_delete_person_success():
     resp = TEST_CLIENT.delete(f'{ep.PEOPLE_EP}/{test_user["email"]}')
     assert resp.status_code == OK
 
-    # Check JSON
     resp_json = resp.get_json()
-    # Should return the actual email now, e.g. {'Deleted': 'testing@nyu.com'}
     assert resp_json == {'Deleted': test_user["email"]}
 
 
