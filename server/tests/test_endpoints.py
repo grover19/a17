@@ -60,6 +60,14 @@ def test_read_one_not_found(mock_read):
     assert resp.status_code == NOT_FOUND
 
 
+@patch('data.people.delete', autospec=True, return_value='deleted')
+def test_delete_person_success(mock_delete):
+    email = "delete@nyu.edu"
+    resp = TEST_CLIENT.delete(f'{ep.PEOPLE_EP}/{email}')
+    assert resp.status_code == OK
+    resp_json = resp.get_json()
+    assert resp_json == {'Deleted': 'deleted'}
+
 
 @patch('data.text.read_one', autospec=True, return_value={
     'title': 'Home Page',
