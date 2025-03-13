@@ -118,6 +118,7 @@ env.bak/
 venv.bak/
 new-venv3/
 new-venv3/lib64
+my-venv4/
 
 # Spyder project settings
 .spyderproject
