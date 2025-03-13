@@ -153,11 +153,8 @@ def delete_manuscript(manu_id):
     # MUST ALSO DELETE IT'S ASSOCIATED HISTORY!!
     manu_id = ObjectId(manu_id)
     manu = dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_id })
-
-    # If manuscript doesn't exist, return 0
-    if not manu:
-        return 0
-
+    if not manu: 
+        return False 
     his_id = manu[MANUSCRIPT_HISTORY_FK]
 
     # trigger 

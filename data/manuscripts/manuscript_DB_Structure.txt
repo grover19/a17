@@ -1,70 +1,43 @@
-Manuscript action flow: https://github.com/AthenaKouKou/journal/blob/main/docs/Manuscript_FSM.jpg 
-Manuscript Document Collection Structure 
-Each manuscripts is connected to ONLY ONE manuscript_history_Object (idek if this is possible )
+{
+    "_id": ObjectId("..."),
+    "author": "John Doe",           // AUTHOR_NAME
+    "manuscript_created": <Date>,   // MANUSCRIPT_CREATED
 
-We update manuscript_history_Object every time the AUTHOR publishes any changes -- so basically every time an UPDATE happens. Then, we give MANUSCRIPT a clean, new manuscript_test_object and we copy the old manuscript_text_Object into this schema. We link the history back to the manuscript with a unique id 
-
-So it’s also possible for us to normalize the schema below into multiple collections, but I heard that in mongodb you should have shit in collections unless absolutely necessary, bs the whole concept of mongodb is to have the related thing bundled up in one “JSON-LIKE” object so that “fetch-ing” information (READ operations) are quick and easy. But also! Each collection has a max limits of 16 MB (i think) so the document can’t grow toooo long. If need be, we might make “versions” it’s own entity 
-
-This whole nesting thing is so ugly 😫 but look! I made it color coded and all pretty :) 
-
-manuscripts: [
-    {
-      "author": "Author Name", 
-      "title": "Manuscript Title", ← 
-	“manuscript_creation” : “12-12-2023” 
-	“manuscript_history”: reference to an id of something else 
-	“State”: 
-      "version": [
-        {
-	    “version_creation”: “12-12-2023”
-    “Version”: 1 
-    “Text”: 
-          "editors": [ 
-            {
-                "editor": [ 
-                  {
-                    "person": “link to a person object”
-                    "role": "Editor/Reviewer/etc.",
-             
-  "comments": [] // comments_object ends 
-
-                  }] //editor_object ends 
-
-            }] // revision_entity ends  
-
-      }] // manuscript_text_Object ends 
-    }]  // manuscripts Object ends 
+    "latest_version": {
+        "state": "Draft",          // e.g. states.DEFAULT_STATE
+        "title": "My Manuscript",  // user-provided
+        "version": 1,              // e.g. states.DEFAULT_VERSION
+        "text": "Full manuscript text",
+        
+        "editors": {
+            // Key = editor identifier (often an email or name)
+            // Value = role for that editor
+            "alice@example.com": "Editor",
+            "bob@example.com": "Reviewer"
+        },
+        
+        "editor_comments": {
+            // Key = same editor identifier
+            // Value = comment text
+            "alice@example.com": "This needs more references.",
+            "bob@example.com": "Check paragraph 3 for typos."
+        }
+    }, 
+    
+    // A reference to a document in the "manuscript_history" collection
+    "manuscript_history_fk": ObjectId("...")
+}
 
 
 
-manuscript_history_Object: [
-	Manuscript_id: references a manuscript object id 
-	history: [{
- “Date_created”: “12-12-2023”
-    “Version”: 1 
-          "revision_Entity": [
-            {
-                "editor_object": [
-                  {
-                    "person": "Link or reference to Person object",
-                    "role": "Editor/Reviewer/etc.",
-                   
-  "Comments_Object": [
-                      {
-                        "comment": "This is a sample comment.",
-                        "author_response": "Author response here."
-                      },
-                      {
-                        "comment": "Another comment example.",
-                        "author_response": "Another author response."
-                      } ] // comments_object ends 
 
-                  }] //editor_object ends here 
-
-            }] // revision_entity ends  here 
-
-}]past_manuscript_text_Object ends here 
+{
+    "_id": ObjectId("..."),
+    "manuscript_id_fk": ObjectId("..."),   // references the manuscript _id in "manuscripts"
+    "history": []
+}
 
 
-  ] //manuscript_history_Object ends here 
+
+
+
