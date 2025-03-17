@@ -43,5 +43,10 @@ def test_create():
     # Ensure the manuscript exists
     assert manu.read_one_manuscript(manu_id) is not None
 
+def test_read():
+     # Ensure the manuscript exists
+    assert manu.read_one_manuscript(manu_id) is not None
 
-    
+
+
+
