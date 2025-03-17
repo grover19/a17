@@ -30,3 +30,18 @@ def test_delete_not_exists():
     delete_result = manu.delete_manuscript(fake_manu_id)
     assert delete_result == 0
 
+def test_create():
+    # Create a test manuscript
+    test_manuscript = manu.create_manuscript(
+        author_name="Test Author",
+        title="Test Manuscript",
+        text="This is a test manuscript."
+    )
+
+    manu_id = test_manuscript["_id"]
+
+    # Ensure the manuscript exists
+    assert manu.read_one_manuscript(manu_id) is not None
+
+
+    
