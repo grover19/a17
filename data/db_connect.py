@@ -5,6 +5,7 @@ We may be required to use a new database at any point.
 import os
 
 import pymongo as pm
+import json
 
 LOCAL = "0"
 CLOUD = "1"
@@ -98,6 +99,12 @@ def read(collection, db=SE_DB, no_id=True) -> list:
             del doc[MONGO_ID]
         else:
             convert_mongo_id(doc)
+            for key, value in doc.items():
+                try:
+                    json.dumps(value)
+                except (TypeError, OverflowError):
+                    doc[key] = str(value)
+
         ret.append(doc)
     return ret
 

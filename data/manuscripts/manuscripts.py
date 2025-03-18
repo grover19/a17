@@ -1,7 +1,7 @@
 import data.db_connect as dbc
 from datetime import datetime
-import  data.manuscripts.states as states  
-import data.people as ppl 
+import  data.manuscripts.states as states
+import data.people as ppl
 from bson.objectid import ObjectId
 from copy import deepcopy
 
@@ -12,32 +12,32 @@ MANUSCRIPTS_COLLECT = 'manuscripts'
 MANUSCRIPT_HISTORY_COLLECT = 'manuscript_history'
 
 
-# --- MANUSCRIPTS COLLECT --- # 
+# --- MANUSCRIPTS COLLECT --- #
 AUTHOR_FK = "author_fk"
 AUTHOR_NAME = 'author'  # reference to a PERSON document
 MANUSCRIPT_CREATED = 'manuscript_created'
-MANUSCRIPT_HISTORY_FK = 'manuscript_history_fk' 
+MANUSCRIPT_HISTORY_FK = 'manuscript_history_fk'
 LATEST_VERSION = 'latest_version'  # array of version objects
 STATE = 'state'
 TITLE = 'title'
 VERSION = 'version'
 TEXT = 'text'
-EDITORS = 'editors' 
+EDITORS = 'editors'
 EDITOR_COMMENTS = 'editor_comments'
 
 
 # --- EDITORS --- #
-EDITOR_FK = 'editor_fk' 
+EDITOR_FK = 'editor_fk'
 EDITOR_NAME = 'editor_name'
 EDITOR_ROLE = 'role'
 EDITOR_COMMENTS = 'comments'
 
-# --- MANUSCRIPT HISTORY COLLECT  --- # 
+# --- MANUSCRIPT HISTORY COLLECT  --- #
 MANUSCRIPT_FK = 'manuscript_id_fk'
 HISTORY = 'history'
 
 
-# --- ADDITIONAL KEY --- # 
+# --- ADDITIONAL KEY --- #
 PEOPLE_FK = 'person'
 MONGO_ID = '_id'
 
@@ -46,27 +46,27 @@ PUSH = '$push'
 SET = '$set'
 
 
-# establishing a mongodb connection 
-dbc.connect_db() 
+# establishing a mongodb connection
+dbc.connect_db()
 
 def get_est_time():
     return datetime.now()
 
 
-def create_mongo_id_object(doc_identifier): 
-    if type(doc_identifier) == ObjectId: 
+def create_mongo_id_object(doc_identifier):
+    if type(doc_identifier) == ObjectId:
         return doc_identifier
 
     """
     takes in a type string and converts it to type ObjectId
-    
+
     """
     return ObjectId(doc_identifier)
 
 
-# ------ HELPER FUNCTIONS ------------ 
+# ------ HELPER FUNCTIONS ------------
 
-def create_manuscript_history(manu_id): 
+def create_manuscript_history(manu_id):
 
     his_template = {
         MANUSCRIPT_FK: create_mongo_id_object(manu_id),
@@ -77,48 +77,48 @@ def create_manuscript_history(manu_id):
 
     if not his_insert:
         raise Exception("Failed to create manuscript history document.")
-    
-    return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {MONGO_ID: his_insert.inserted_id})
-    
 
-def create_simple_manuscript(author_name,  title, text): 
+    return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {MONGO_ID: his_insert.inserted_id})
+
+
+def create_simple_manuscript(author_name,  title, text):
 
 
     manu_template = {
-    AUTHOR_NAME: author_name, 
+    AUTHOR_NAME: author_name,
     MANUSCRIPT_CREATED: get_est_time(),
-    LATEST_VERSION: 
+    LATEST_VERSION:
         {
             STATE: states.DEFAULT_STATE,  # initial state can be 'Draft'
-            TITLE: title, 
+            TITLE: title,
             VERSION: states.DEFAULT_VERSION,
             TEXT: text,
-            EDITORS: {}, 
+            EDITORS: {},
             EDITOR_COMMENTS: {}
         }
     }
 
-    
+
     manu_insert = dbc.create(MANUSCRIPTS_COLLECT, manu_template)
 
-    if  not manu_insert.acknowledged: 
+    if  not manu_insert.acknowledged:
         raise Exception("Failed to create manuscript document.")
-    
-    return manu_insert 
+
+    return manu_insert
 
 
 
-def create_manuscript(author_name, title, text): 
+def create_manuscript(author_name, title, text):
     manu_insert = create_simple_manuscript(author_name, title, text)
     manu_id = manu_insert.inserted_id
 
-    his = create_manuscript_history(manu_id) 
-    his_id = create_mongo_id_object(his[MONGO_ID]) 
+    his = create_manuscript_history(manu_id)
+    his_id = create_mongo_id_object(his[MONGO_ID])
 
     # mongoDB automatically creates a new field "manuscript_history"
-    # if it doesn't already exist  
+    # if it doesn't already exist
 
-    filters = { 
+    filters = {
         MONGO_ID: manu_id
     }
 
@@ -127,21 +127,27 @@ def create_manuscript(author_name, title, text):
     }
 
     manu_updated = dbc.update(
-        MANUSCRIPTS_COLLECT, 
-        filters, 
+        MANUSCRIPTS_COLLECT,
+        filters,
         update_dict
     )
 
-    if  not manu_updated.acknowledged: 
+    if  not manu_updated.acknowledged:
+        return None
         raise Exception("Failed to create manuscript document.")
+
 
     return dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_id})
 
 
 def read_one_manuscript(manu_id) :
     manu_obj_id = ObjectId(manu_id)
+    if not manu_obj_id:
+        return None
     return dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_obj_id})
 
+def read_all_manuscripts():
+    return dbc.read(MANUSCRIPTS_COLLECT,dbc.SE_DB, False)
 
 def delete_manuscript_history(his_id):
     his_id = ObjectId(his_id)
@@ -153,18 +159,15 @@ def delete_manuscript(manu_id):
     # MUST ALSO DELETE IT'S ASSOCIATED HISTORY!!
     manu_id = ObjectId(manu_id)
     manu = dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_id })
-
-    # If manuscript doesn't exist, return 0
     if not manu:
-        return 0
-
+        return False
     his_id = manu[MANUSCRIPT_HISTORY_FK]
 
-    # trigger 
+    # trigger
     his_delete = delete_manuscript_history(his_id)
 
-    manu_delete = dbc.delete(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_id}) 
-                                  
+    manu_delete = dbc.delete(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_id})
+
     return manu_delete
 
 
