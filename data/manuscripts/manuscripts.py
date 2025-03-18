@@ -148,6 +148,8 @@ def read_one_manuscript(manu_id) :
         return None
     return dbc.read_one(MANUSCRIPTS_COLLECT, {MONGO_ID: manu_obj_id})
 
+def read_all_manuscripts(): 
+    return dbc.read(MANUSCRIPTS_COLLECT,dbc.SE_DB, False)
 
 def delete_manuscript_history(his_id):
     his_id = ObjectId(his_id)
