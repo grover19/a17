@@ -284,9 +284,25 @@ class PeopleCreate(Resource):
 
 
 # ENDPOINTS FOR TEXT
+TEXT_EP = "/text"
 TEXT_DELETE_EP = "/text/delete"
 TEXT_CREATE_EP = "/text/create"
 TEXT_GET = "/text/<string:key>"
+
+
+@api.route(TEXT_EP)
+class TextRetrieveAll(Resource):
+    """
+    Retrieve all texts
+    """
+    @api.response(HTTPStatus.OK, "Texts retrieved successfully")
+    def get(self):
+        """
+        Retrieve all texts
+        """
+        all_text = txt.read_all_texts()
+        # Simply return the list of texts, even if it's empty.
+        return all_text
 
 
 @api.route(TEXT_GET)

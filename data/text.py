@@ -88,6 +88,10 @@ def read():
     return text
 
 
+def read_all_texts():
+    return dbc.read(TEXT_COLLECTION, dbc.SE_DB, False)
+
+
 def read_one(key: str) -> dict:
     # This should take a key and return the page dictionary
     # for that key. Return an empty dictionary of key not found.
