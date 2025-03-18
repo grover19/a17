@@ -288,6 +288,7 @@ TEXT_EP = "/text"
 TEXT_DELETE_EP = "/text/delete"
 TEXT_CREATE_EP = "/text/create"
 TEXT_GET = "/text/<string:key>"
+TEXT_UPDATE_EP = "/text/update"
 
 
 @api.route(TEXT_EP)
@@ -363,6 +364,31 @@ class TextDelete(Resource):
         Delete a text entry.
         """
         return txt.delete(key)
+
+
+@api.route(TEXT_UPDATE_EP)
+class TextUpdate(Resource):
+    @api.expect(api.model(
+        "UpdateText",
+        {
+            "key": fields.String(required=True),
+            "title": fields.String(required=True),
+            "text": fields.String(required=True),
+        },
+    ))
+    def post(self):
+        """
+        Update a text entry.
+        """
+        data = request.get_json()
+        try:
+            txt.update(data["key"], data["title"], data["text"])
+            return {
+                "message": "Text updated successfully",
+                "key": data["key"]
+            }, HTTPStatus.OK
+        except ValueError as e:
+            raise wz.NotFound(str(e))
 
 
 if __name__ == "__main__":

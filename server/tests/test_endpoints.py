@@ -255,3 +255,24 @@ def test_delete_manuscript_endpoint_not_found(mock_create_manuscript):
 
     # Check that the deletion function indicated success (non-zero value).
     assert data == 0
+
+
+@patch("data.text.update", autospec=True)
+def test_update_text(mock_update):
+    payload = {
+        "key": "HomePage",
+        "title": "Updated Home Page",
+        "text": "Updated content here."
+    }
+
+    resp = TEST_CLIENT.post("/text/update", json=payload)
+    assert resp.status_code == HTTPStatus.OK
+
+    resp_json = resp.get_json()
+    assert resp_json == {
+        "message": "Text updated successfully",
+        "key": payload["key"]
+    }
+
+    mock_update.assert_called_once_with(payload["key"], payload["title"], payload["text"])
+
