@@ -29,3 +29,19 @@ def test_delete_not_exists():
     # Attempt to delete a non-existent manuscript
     delete_result = manu.delete_manuscript(fake_manu_id)
     assert delete_result == 0
+
+def test_create_manuscript():
+    # Create a new manuscript
+    test_data = {
+        "author_name": "Test Author",
+        "title": "Test Manuscript",
+        "text": "This is a test manuscript."
+    }
+    
+    created_manuscript = manu.create_manuscript(**test_data)
+    
+    # Ensure manuscript creation was successful
+    assert created_manuscript is not None
+    assert "_id" in created_manuscript
+
+   
