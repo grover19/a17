@@ -31,17 +31,28 @@ def test_delete_not_exists():
     assert delete_result == 0
 
 def test_create_manuscript():
-    # Create a new manuscript
+    # Test data
     test_data = {
         "author_name": "Test Author",
         "title": "Test Manuscript",
         "text": "This is a test manuscript."
     }
-    
-    created_manuscript = manu.create_manuscript(**test_data)
-    
-    # Ensure manuscript creation was successful
-    assert created_manuscript is not None
-    assert "_id" in created_manuscript
 
-   
+    # Create manuscript
+    created = manu.create_manuscript(**test_data)
+    assert created and "_id" in created, "Manuscript creation failed"
+
+    manu_id = created["_id"]
+
+    # Retrieve manuscript
+    retrieved = manu.read_one_manuscript(manu_id)
+    assert retrieved, "Manuscript not found in database"
+    
+    # Validate fields
+    assert retrieved.get("author") == test_data["author_name"], "Author mismatch"
+    assert retrieved.get("latest_version", {}).get("title") == test_data["title"], "Title mismatch"
+    assert retrieved.get("latest_version", {}).get("text") == test_data["text"], "Text mismatch"
+
+    # Cleanup
+    assert manu.delete_manuscript(manu_id) == 1, "Failed to delete manuscript"
+    assert manu.read_one_manuscript(manu_id) is None, "Manuscript was not deleted"
