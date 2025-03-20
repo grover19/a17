@@ -59,32 +59,19 @@ def delete(key):
 
 
 def update(key: str, title: str, text: str):
-    """
-    Update an existing page in text_dict.
-
-    Arguments:
-        key (str): The key identifying the page.
-        title (str): The new title of the page.
-        text (str): The new text content of the page.
-
-    Returns:
-        str: The key of the updated page.
-
-    Raises:
-        ValueError: If the key does not exist in text_dict.
-    """
     existing = dbc.read_one(TEXT_COLLECTION, {KEY: key})
     if not existing:
         raise ValueError(f"Updating non-existent page: key='{key}'")
 
-    result = dbc.update_one(
+    result = dbc.update(
         TEXT_COLLECTION,
         {KEY: key},
-        {"$set": {TITLE: title, TEXT: text}}
+        {TITLE: title, TEXT: text}
     )
 
     if result.matched_count == 0:
-        raise ValueError(f"Failed to update: key='{key}' not found")
+        raise ValueError(f"No page found with key: {key}")
+
     return key
 
 
