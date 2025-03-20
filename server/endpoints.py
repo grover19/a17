@@ -282,6 +282,7 @@ class PeopleCreate(Resource):
             raise wz.NotAcceptable(f"Could not add person: {err=}")
         return {MESSAGE: "Person added!", RETURN: ret}
 
+
 @api.route(f"{PEOPLE_EP}/update")
 class PeopleUpdate(Resource):
     """
@@ -324,6 +325,7 @@ class PeopleUpdate(Resource):
             }, HTTPStatus.OK
         except ValueError as err:
             raise wz.NotFound(str(err))
+
 
 # ENDPOINTS FOR TEXT
 TEXT_EP = "/text"
