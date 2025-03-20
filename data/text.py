@@ -73,10 +73,18 @@ def update(key: str, title: str, text: str):
     Raises:
         ValueError: If the key does not exist in text_dict.
     """
-    if key not in text_dict:
-        raise ValueError(f'Updating non-existent page: {key=}')
+    existing = dbc.read_one(TEXT_COLLECTION, {KEY: key})
+    if not existing:
+        raise ValueError(f"Updating non-existent page: key='{key}'")
 
-    text_dict[key] = {TITLE: title, TEXT: text}
+    result = dbc.update_one(
+        TEXT_COLLECTION,
+        {KEY: key},
+        {"$set": {TITLE: title, TEXT: text}}
+    )
+
+    if result.matched_count == 0:
+        raise ValueError(f"Failed to update: key='{key}' not found")
     return key
 
 
