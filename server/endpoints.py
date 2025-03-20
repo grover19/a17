@@ -397,17 +397,24 @@ class TextCreate(Resource):
         }
 
 
-@api.route(TEXT_DELETE_EP)
-class TextDelete(Resource):
-    """
-    This class handles deleting text entries.
-    """
-
+@api.route(f'{TEXT_EP}/delete/<string:key>')
+class DeleteText(Resource):
     def delete(self, key):
         """
-        Delete a text entry.
+        Delete a text entry
         """
-        return txt.delete(key)
+        try:
+            deleted_key = txt.delete(key)
+            return {
+                'message': (
+                    f'Text entry with key "{deleted_key}" '
+                    'deleted successfully'
+                )
+            }, HTTPStatus.OK
+        except ValueError as e:
+            return {'error': str(e)}, HTTPStatus.NOT_FOUND
+        except Exception as e:
+            return {'error': str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @api.route(TEXT_UPDATE_EP)
