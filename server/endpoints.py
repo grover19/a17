@@ -282,6 +282,48 @@ class PeopleCreate(Resource):
             raise wz.NotAcceptable(f"Could not add person: {err=}")
         return {MESSAGE: "Person added!", RETURN: ret}
 
+@api.route(f"{PEOPLE_EP}/update")
+class PeopleUpdate(Resource):
+    """
+    Update a person's information in the journal database.
+    """
+
+    @api.response(HTTPStatus.OK, "Person updated successfully")
+    @api.response(HTTPStatus.NOT_FOUND, "No such person exists")
+    @api.response(HTTPStatus.BAD_REQUEST, "Invalid request data")
+    @api.expect(api.model(
+        "UpdatePeopleEntry",
+        {
+            ppl.NAME: fields.String(required=True),
+            ppl.AFFILIATION: fields.String(required=True),
+            ppl.EMAIL: fields.String(required=True),
+            ppl.ROLES: fields.List(fields.String, required=True),
+        },
+    ))
+    def post(self):
+        """
+        Update an existing person's details.
+        """
+        data = request.get_json()
+
+        # Extract fields
+        name = data.get(ppl.NAME)
+        affiliation = data.get(ppl.AFFILIATION)
+        email = data.get(ppl.EMAIL)
+        roles = data.get(ppl.ROLES)
+
+        # Validate input
+        if not (name and affiliation and email and isinstance(roles, list)):
+            raise wz.BadRequest("Invalid request: Missing or incorrect fields")
+
+        try:
+            updated_email = ppl.update(name, affiliation, email, roles)
+            return {
+                "message": "Person updated successfully",
+                "email": updated_email
+            }, HTTPStatus.OK
+        except ValueError as err:
+            raise wz.NotFound(str(err))
 
 # ENDPOINTS FOR TEXT
 TEXT_EP = "/text"
