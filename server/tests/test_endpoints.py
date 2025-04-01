@@ -142,7 +142,7 @@ def test_create_manuscripts(mock_create):
     payload = {"author": MOCK_AUTHOR, "title": MOCK_TITLE, "text": MOCK_TEXT}
 
     # Use the test client
-    response = TEST_CLIENT.post("/manuscripts/create", json=payload)
+    response = TEST_CLIENT.put("/manuscripts/create", json=payload)
 
     # Verify that the response status code is as expected.
     assert response.status_code in (HTTPStatus.CREATED, HTTPStatus.OK)
@@ -213,48 +213,27 @@ def test_read_manuscript_not_found(mock_read):
     assert response.status_code == NOT_FOUND
 
 
-@patch(
-    "data.manuscripts.manuscripts.create_manuscript",
-    autospec=True,
-    return_value=mock_manuscript,
-)
+@patch("data.manuscripts.manuscripts.create_manuscript", autospec=True, return_value=mock_manuscript)
 @patch("data.manuscripts.manuscripts.delete_manuscript", autospec=True, return_value=1)
-def test_delete_manuscript_endpoint(mock_delete_manuscript, mock_create_manuscript):
-    # Use the create_manuscript patch to retrieve a known manuscript id.
-    manuscript = mock_create_manuscript.return_value
-    manuscript_id = str(manuscript["_id"])
+def test_delete_manuscript_success(mock_delete, mock_create):
+    mock_id = str(ObjectId())
 
-    # Send a DELETE request
-    response = TEST_CLIENT.delete(f"/manuscripts/{manuscript_id}")
-
-    # Assert that the response status is HTTP OK.
+    response = TEST_CLIENT.delete(ep.MANUSCRIPTS_DEL_EP.replace("<id>", mock_id))
     assert response.status_code == HTTPStatus.OK
 
-    data = response.get_json()
-    assert data is not None
-    data = int(data)
-
-    # Check that the deletion function indicated success (non-zero value).
-    assert data != 0
+    resp_json = response.get_json()
+    assert resp_json == {"message": f"Manuscript with ID {mock_id} deleted."}
 
 
 @patch("data.manuscripts.manuscripts.delete_manuscript", autospec=True, return_value=0)
-def test_delete_manuscript_endpoint_not_found(mock_create_manuscript):
-    # Use the create_manuscript patch to retrieve a known manuscript id.
-    dne_id = ObjectId()
+def test_delete_manuscript_not_found(mock_delete):
+    mock_id = str(ObjectId())
 
-    # Send a DELETE request
-    response = TEST_CLIENT.delete(f"/manuscripts/{dne_id}")
+    response = TEST_CLIENT.delete(ep.MANUSCRIPTS_DEL_EP.replace("<id>", mock_id))
+    assert response.status_code == HTTPStatus.NOT_FOUND
 
-    # Assert that the response status is HTTP OK.
-    assert response.status_code == HTTPStatus.OK
-
-    data = response.get_json()
-    assert data is not None
-    data = int(data)
-
-    # Check that the deletion function indicated success (non-zero value).
-    assert data == 0
+    resp_json = response.get_json()
+    assert "No manuscript found with ID" in resp_json["message"]
 
 
 @patch("data.text.update", autospec=True)
