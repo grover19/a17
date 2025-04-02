@@ -59,24 +59,19 @@ def delete(key):
 
 
 def update(key: str, title: str, text: str):
-    """
-    Update an existing page in text_dict.
+    existing = dbc.read_one(TEXT_COLLECTION, {KEY: key})
+    if not existing:
+        raise ValueError(f"Updating non-existent page: key='{key}'")
 
-    Arguments:
-        key (str): The key identifying the page.
-        title (str): The new title of the page.
-        text (str): The new text content of the page.
+    result = dbc.update(
+        TEXT_COLLECTION,
+        {KEY: key},
+        {TITLE: title, TEXT: text}
+    )
 
-    Returns:
-        str: The key of the updated page.
+    if result.matched_count == 0:
+        raise ValueError(f"No page found with key: {key}")
 
-    Raises:
-        ValueError: If the key does not exist in text_dict.
-    """
-    if key not in text_dict:
-        raise ValueError(f'Updating non-existent page: {key=}')
-
-    text_dict[key] = {TITLE: title, TEXT: text}
     return key
 
 
@@ -89,6 +84,10 @@ def read():
     """
     text = text_dict
     return text
+
+
+def read_all_texts():
+    return dbc.read(TEXT_COLLECTION, dbc.SE_DB, False)
 
 
 def read_one(key: str) -> dict:
