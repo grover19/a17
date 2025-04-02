@@ -17,59 +17,56 @@ import data.manuscripts.manuscripts as ms
 
 
 app = Flask(__name__)
+
 CORS(app)
 api = Api(app)
 
-DATE = '2024-09-24'
-DATE_RESP = 'Date'
-EDITOR = 'ejc369@nyu.edu'
-EDITOR_RESP = 'Editor'
-ENDPOINT_EP = '/endpoints'
-ENDPOINT_RESP = 'Available endpoints'
-HELLO_EP = '/hello'
-HELLO_RESP = 'hello'
-MESSAGE = 'Message'
-PEOPLE_EP = '/people'
-PUBLISHER = 'Palgave'
-PUBLISHER_RESP = 'Publisher'
-RETURN = 'return'
-TITLE = 'The Journal of API Technology'
-TITLE_EP = '/title'
-TITLE_RESP = 'Title'
-
-# ENDPOINTS FOR TEXT
-TEXT_DELETE_EP = '/text/delete'
-TEXT_DELETE_RESP = 'Text Deleted'
-TEXT_CREATE_EP = '/text/create'
-TEXT_COLLECTION = 'text'
-
-# --- Manuscript Endpoint Constants ---
+DATE = "2024-09-24"
+DATE_RESP = "Date"
+EDITOR = "ejc369@nyu.edu"
+EDITOR_RESP = "Editor"
+ENDPOINT_EP = "/endpoints"
+ENDPOINT_RESP = "Available endpoints"
+HELLO_EP = "/hello"
+HELLO_RESP = "hello"
+MESSAGE = "Message"
+PUBLISHER = "Palgave"
+PUBLISHER_RESP = "Publisher"
+RETURN = "return"
+TITLE = "The Journal of API Technology"
+TITLE_EP = "/title"
+TITLE_RESP = "Title"
 
 
 # --- Manuscript Endpoint Constants ---
 MANUSCRIPTS_EP = "/manuscripts"
 MANUSCRIPTS_CREATE_EP = f"{MANUSCRIPTS_EP}/create"
-MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/GET/<id>"
-MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/delete/<id>"
+MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/<id>"
+MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/<id>"
+MANUSCRIPTS_UPDATE_EP = f"{MANUSCRIPTS_EP}/update"  # for later use
 
 
-MANUSCRIPT_CREATE_FLDS = api.model("CreateManuscript", {
-    "author": fields.String(required=True),
-    "title": fields.String(required=True),
-    "text": fields.String(required=True),
-})
+MANUSCRIPT_CREATE_FLDS = api.model(
+    "CreateManuscript",
+    {
+        "author": fields.String(required=True),
+        "title": fields.String(required=True),
+        "text": fields.String(required=True),
+    },
+)
 
 
-@api.route(f'{MANUSCRIPTS_CREATE_EP}')
+@api.route(f"{MANUSCRIPTS_CREATE_EP}")
 class ManuscriptCreate(Resource):
     """
     Create a new manuscript entry.
     """
+
     @api.expect(MANUSCRIPT_CREATE_FLDS)
     @api.response(HTTPStatus.CREATED, "Manuscript successfully created")
-    @api.response(HTTPStatus.BAD_REQUEST,
-                  "Missing required fields or invalid input")
-    def post(self):
+    # @api.response(HTTPStatus.BAD_REQUEST,
+    #               "Missing required fields or invalid input")
+    def put(self):
         """
         Create a manuscript.
         """
@@ -82,58 +79,72 @@ class ManuscriptCreate(Resource):
             raise wz.BadRequest("Missing one or more required fields")
 
         manu = ms.create_manuscript(author, title, text)
+        print(manu)
         if not manu:
             raise wz.InternalServerError("Manuscript creation failed.")
+
         return {
-            "message": "Manuscript created successfully",
-            "manuscript_id": manu[ms.MONGO_ID],
-        }, HTTPStatus.CREATED
+            "author": manu[ms.AUTHOR_NAME],
+            "title": manu[ms.LATEST_VERSION][ms.TITLE],
+            "text": manu[ms.LATEST_VERSION][ms.TEXT],
+        }
 
 
 @api.route(MANUSCRIPTS_DEL_EP)
-class ManuscriptDelete(Resource):
+class ManuscriptResource(Resource):
     """
-    Delete a manuscript entry by its manuscript id.
+    GET and DELETE /manuscripts/{id}
     """
-    def delete(self, id):
-        """
-        Delete a manuscript by its manuscript id.
-        """
-        id = id.strip()
-        deleted = ms.delete_manuscript(id)
-        if not deleted:
-            raise wz.NotFound(f"No manuscript found with id '{id}'.")
-        return {
-            "message": "Manuscript and its history deleted successfully"
-        }, HTTPStatus.OK
 
-
-@api.route(MANUSCRIPTS_GET_EP)
-class ManuscriptRetrieve(Resource):
-    """
-    Retrieve a manuscript entry by its manuscript id.
-    """
     @api.response(HTTPStatus.OK, "Manuscript retrieved successfully")
     @api.response(HTTPStatus.BAD_REQUEST, "Missing or invalid manuscript id")
     @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
     def get(self, id):
         """
-        Retrieve a manuscript by manuscript id.
+        Retrieve a manuscript by ID.
         """
         id = id.strip()
-        # Optionally validate the manuscript_id as a MongoDB ObjectId.
-
         manu = ms.read_one_manuscript(id)
         if not manu:
             raise wz.NotFound(f"No manuscript found with id '{id}'.")
-
-        # Assume the latest version is stored under ms.LATEST_VERSION.
-        latest_manu = manu.get(ms.LATEST_VERSION, {})
+        latest_manu = manu["latest_version"]
         return {
-            "author": manu.get(ms.AUTHOR_NAME),
-            "title": latest_manu.get(ms.TITLE),
+            "author": manu[ms.AUTHOR_NAME],
+            "title": latest_manu[ms.TITLE],
             "text": latest_manu.get(ms.TEXT),
-        }, HTTPStatus.OK
+        }
+
+    @api.response(HTTPStatus.OK, "Manuscript successfully deleted")
+    @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
+    def delete(self, id):
+        """
+        Delete a manuscript by ID.
+        """
+        id = id.strip()
+        result = ms.delete_manuscript(id)
+        if result:
+            return {
+                "message": (
+                    f"Manuscript with ID {id} deleted."
+                )
+            }, HTTPStatus.OK
+        else:
+            raise wz.NotFound(f"No manuscript found with ID {id}")
+
+
+@api.route(MANUSCRIPTS_EP)
+class ManuscriptRetrieveAll(Resource):
+    """
+    Retrieve all manuscript entries
+    """
+
+    @api.response(HTTPStatus.OK, "Manuscripts retrieved successfully")
+    def get(self):
+        """
+        Retrieve all manuscripts
+        """
+        all_manu = ms.read_all_manuscripts()
+        return all_manu
 
 
 @api.route(HELLO_EP)
@@ -142,6 +153,7 @@ class HelloWorld(Resource):
     The purpose of the HelloWorld class is to have a simple test to see if the
     app is working at all.
     """
+
     def get(self):
         """
         A trivial endpoint to see if the server is running.
@@ -155,6 +167,7 @@ class Endpoints(Resource):
     This class will serve as live, fetchable documentation of what endpoints
     are available in the system.
     """
+
     def get(self):
         """
         The `get()` method will return a sorted list of available endpoints.
@@ -169,6 +182,7 @@ class JournalTitle(Resource):
     This class handles creating, reading, updating
     and deleting the journal title.
     """
+
     def get(self):
         """
         Retrieve the journal title.
@@ -181,64 +195,80 @@ class JournalTitle(Resource):
         }
 
 
+# ENDPOINTS FOR PEOPLE
+PEOPLE_EP = "/people"
+PEOPLE_GET_EP = f"{PEOPLE_EP}/<email>"
+PEOPLE_CREATE_EP = f"{PEOPLE_EP}/create"
+PEOPLE_UPDATE_EP = f"{PEOPLE_EP}/update"
+
+
 @api.route(PEOPLE_EP)
 class People(Resource):
     """
     This class handles creating, reading, updating
     and deleting journal people.
     """
+
     def get(self):
         """
-        Retrieve the journal people.
+        Retrieve all journal people.
         """
         return ppl.read()
 
 
-@api.route(f'{PEOPLE_EP}/<email>')
+@api.route(PEOPLE_GET_EP)
 class Person(Resource):
     """
     This class handles creating, reading, updating
     and deleting journal people.
     """
+
     def get(self, email):
         """
-        Retrieve a journal person.
+        Retrieve a journal person by email.
         """
         person = ppl.read_one(email)
         if person:
             return person
         else:
-            raise wz.NotFound(f'No such record: {email}')
+            raise wz.NotFound(f"No such record: {email}")
 
-    @api.response(HTTPStatus.OK, 'Success.')
-    @api.response(HTTPStatus.NOT_FOUND, 'No such person.')
+    @api.response(HTTPStatus.OK, "Success.")
+    @api.response(HTTPStatus.NOT_FOUND, "No such person.")
     def delete(self, email):
+        """
+        Delete a journal person.
+        """
         ret = ppl.delete(email)
         if ret is not None:
-            return {'Deleted': ret}
+            return {"Deleted": ret}  # 200 OK
         else:
-            raise wz.NotFound(f'No such person: {email}')
+            raise wz.NotFound(f"No such person: {email}")  # 404
 
 
-PEOPLE_CREATE_FLDS = api.model('AddNewPeopleEntry', {
-    ppl.NAME: fields.String,
-    ppl.EMAIL: fields.String,
-    ppl.AFFILIATION: fields.String,
-    ppl.ROLES: fields.String,
-})
+PEOPLE_CREATE_FLDS = api.model(
+    "AddNewPeopleEntry",
+    {
+        ppl.NAME: fields.String,
+        ppl.EMAIL: fields.String,
+        ppl.AFFILIATION: fields.String,
+        ppl.ROLES: fields.String,
+    },
+)
 
 
-@api.route(f'{PEOPLE_EP}/create')
+@api.route(PEOPLE_CREATE_EP)
 class PeopleCreate(Resource):
     """
     Add a person to the journal db.
     """
-    @api.response(HTTPStatus.OK, 'Success')
-    @api.response(HTTPStatus.NOT_ACCEPTABLE, 'Not acceptable')
+
+    @api.response(HTTPStatus.OK, "Success")
+    @api.response(HTTPStatus.NOT_ACCEPTABLE, "Not acceptable")
     @api.expect(PEOPLE_CREATE_FLDS)
     def put(self):
         """
-        Add a person
+        Add a journal person
         """
         try:
             name = request.json.get(ppl.NAME)
@@ -247,24 +277,114 @@ class PeopleCreate(Resource):
             role = request.json.get(ppl.ROLES)
             ret = ppl.create(name, affiliation, email, role)
         except Exception as err:
-            raise wz.NotAcceptable(f'Could not add person: {err=}')
-        return {MESSAGE: 'Person added!', RETURN: ret}
+            raise wz.NotAcceptable(f"Could not add person: {err=}")
+        return {MESSAGE: "Person added!", RETURN: ret}
 
 
-@api.route('/text/<string:key>')
-class TextOneResource(Resource):
+@api.route(PEOPLE_UPDATE_EP)
+class PeopleUpdate(Resource):
     """
-    This class handles retrieving a single text entry.
+    Update a person's information in the journal database.
     """
+
+    @api.response(HTTPStatus.OK, "Person updated successfully")
+    @api.response(HTTPStatus.NOT_FOUND, "No such person exists")
+    @api.response(HTTPStatus.BAD_REQUEST, "Invalid request data")
+    @api.expect(api.model(
+        "UpdatePeopleEntry",
+        {
+            ppl.NAME: fields.String(required=True),
+            ppl.AFFILIATION: fields.String(required=True),
+            ppl.EMAIL: fields.String(required=True),
+            ppl.ROLES: fields.List(fields.String, required=True),
+        },
+    ))
+    def post(self):
+        """
+        Update a journal person
+        """
+        data = request.get_json()
+
+        # Extract fields
+        name = data.get(ppl.NAME)
+        affiliation = data.get(ppl.AFFILIATION)
+        email = data.get(ppl.EMAIL)
+        roles = data.get(ppl.ROLES)
+
+        # Validate input
+        if not (name and affiliation and email and isinstance(roles, list)):
+            raise wz.BadRequest("Invalid request: Missing or incorrect fields")
+
+        try:
+            updated_email = ppl.update(name, affiliation, email, roles)
+            return {
+                "message": "Person updated successfully",
+                "email": updated_email
+            }, HTTPStatus.OK
+        except ValueError as err:
+            raise wz.NotFound(str(err))
+
+
+# ENDPOINTS FOR TEXT
+TEXT_EP = "/text"
+TEXT_GET_EP = f"{TEXT_EP}/<string:key>"
+TEXT_CREATE_EP = f"{TEXT_EP}/create"
+TEXT_UPDATE_EP = f"{TEXT_EP}/update"
+
+
+@api.route(TEXT_EP)
+class TextRetrieveAll(Resource):
+    """
+    Retrieve all texts entries
+    """
+    @api.response(HTTPStatus.OK, "Texts retrieved successfully")
+    def get(self):
+        """
+        Retrieve all texts entries
+        """
+        all_text = txt.read_all_texts()
+        # Simply return the list of texts, even if it's empty.
+        return all_text
+
+
+@api.route(TEXT_GET_EP)
+class TextResource(Resource):
+    """
+    GET and DELETE /text/{key}
+    """
+
+    @api.response(HTTPStatus.OK, "Text retrieved successfully")
+    @api.response(HTTPStatus.NOT_FOUND, "Text not found")
     def get(self, key):
         """
-        Retrieve a single text entry by key.
+        Retrieve a text entry by key.
         """
-        entry = txt.read_one(key)
-        if entry:
-            return entry, HTTPStatus.OK
+        test_doc = txt.read_one(key)
+        if test_doc:
+            return {
+                "title": test_doc["title"],
+                "text": test_doc["text"]
+            }, HTTPStatus.OK
         else:
-            raise wz.NotFound(f'No text entry found for key: {key}')
+            raise wz.NotFound(f"No text entry found for key: {key}")
+
+    @api.response(HTTPStatus.OK, "Text entry deleted successfully")
+    @api.response(HTTPStatus.NOT_FOUND, "Text entry not found")
+    def delete(self, key):
+        """
+        Delete a text entry by key.
+        """
+        try:
+            deleted_key = txt.delete(key)
+            return {
+                "message": (
+                    f'Text entry with key "{deleted_key}" deleted successfully'
+                )
+            }, HTTPStatus.OK
+        except ValueError as e:
+            return {'error': str(e)}, HTTPStatus.NOT_FOUND
+        except Exception as e:
+            return {'error': str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @api.route(TEXT_CREATE_EP)
@@ -272,30 +392,54 @@ class TextCreate(Resource):
     """
     This class handles creating text entries.
     """
-    @api.expect(api.model('CreateText', {
-        'key': fields.String,
-        'title': fields.String,
-        'text': fields.String,
-    }))
+
+    @api.expect(
+        api.model(
+            "CreateText",
+            {
+                "key": fields.String,
+                "title": fields.String,
+                "text": fields.String,
+            },
+        )
+    )
     def put(self):
         """
         Create a new text entry.
         """
         data = request.json
-        return txt.create(data['key'], data['title'], data['text'])
+        text_doc = txt.create(data["key"], data["title"], data["text"])
+        return {
+            "key": text_doc["key"],
+            "title": text_doc["title"],
+            "text": text_doc["text"],
+        }
 
 
-@api.route(TEXT_DELETE_EP)
-class TextDelete(Resource):
-    """
-    This class handles deleting text entries.
-    """
-    def delete(self, key):
+@api.route(TEXT_UPDATE_EP)
+class TextUpdate(Resource):
+    @api.expect(api.model(
+        "UpdateText",
+        {
+            "key": fields.String(required=True),
+            "title": fields.String(required=True),
+            "text": fields.String(required=True),
+        },
+    ))
+    def post(self):
         """
-        Delete a text entry.
+        Update a text entry.
         """
-        return txt.delete(key)
+        data = request.get_json()
+        try:
+            txt.update(data["key"], data["title"], data["text"])
+            return {
+                "message": "Text updated successfully",
+                "key": data["key"]
+            }, HTTPStatus.OK
+        except ValueError as e:
+            raise wz.NotFound(str(e))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)

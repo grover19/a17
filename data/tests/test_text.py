@@ -27,16 +27,17 @@ def test_read_one_not_found():
     assert txt.read_one('Not a page key!') == {}
 
 def test_delete_exists():
-    # 1/2 tests for the text delete()
-    # test for an existing key
-    # check if deletion key exists in data.text
-    texts = txt.read()
-    assert txt.DEL_KEY in texts
+    test_data = {
+        txt.KEY: txt.DEL_KEY,
+        txt.TITLE: "Delete Page",
+        txt.TEXT: "This is a text to delete."
+    }
+    if not dbc.read_one(txt.TEXT_COLLECTION, {txt.KEY: txt.DEL_KEY}):
+        dbc.create(txt.TEXT_COLLECTION, test_data)
 
-    #attempt to delete the text instance
-    final_val = txt.delete(txt.DEL_KEY)
-
-    assert txt.DEL_KEY not in final_val
+    delete_result = txt.delete(txt.DEL_KEY)
+    assert delete_result == 1
+    assert dbc.read_one(txt.TEXT_COLLECTION, {txt.KEY: txt.DEL_KEY}) is None
 
 def test_delete_not_exists():
     # 2/2 tests for the text delete()

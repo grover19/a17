@@ -4,6 +4,8 @@ This module interfaces to our user data.
 
 # import data.db_connect as dbc
 # fields
+import data.db_connect as dbc
+
 KEY = 'key'
 TITLE = 'title'
 TEXT = 'text'
@@ -30,36 +32,46 @@ text_dict = {
     },
 }
 
+# set up db client
+dbc.connect_db()
 
-def create():
-    pass
+
+def create(key, title, text):
+    document = {KEY: key, TITLE: title, TEXT: text}
+    try:
+        # check if key already exists
+        if dbc.read_one(TEXT_COLLECTION, {KEY: key}):
+            raise KeyError(f'{key} already exists')
+
+        dbc.create(TEXT_COLLECTION, document)
+
+        return dbc.read_one(TEXT_COLLECTION, {KEY: key})
+
+    except Exception as e:
+        print(f"Create Text Error {str(e)}")
 
 
-def delete(dict_key: str):
-    print(f'{KEY=}, {dict_key=}')
-    del text_dict[dict_key]
-    return text_dict
+def delete(key):
+    text_collect = dbc.read_one(TEXT_COLLECTION, {KEY: key})
+    if not text_collect:
+        return 0
+    return dbc.delete(TEXT_COLLECTION, {KEY: key})
 
 
 def update(key: str, title: str, text: str):
-    """
-    Update an existing page in text_dict.
+    existing = dbc.read_one(TEXT_COLLECTION, {KEY: key})
+    if not existing:
+        raise ValueError(f"Updating non-existent page: key='{key}'")
 
-    Arguments:
-        key (str): The key identifying the page.
-        title (str): The new title of the page.
-        text (str): The new text content of the page.
+    result = dbc.update(
+        TEXT_COLLECTION,
+        {KEY: key},
+        {TITLE: title, TEXT: text}
+    )
 
-    Returns:
-        str: The key of the updated page.
+    if result.matched_count == 0:
+        raise ValueError(f"No page found with key: {key}")
 
-    Raises:
-        ValueError: If the key does not exist in text_dict.
-    """
-    if key not in text_dict:
-        raise ValueError(f'Updating non-existent page: {key=}')
-
-    text_dict[key] = {TITLE: title, TEXT: text}
     return key
 
 
@@ -74,13 +86,17 @@ def read():
     return text
 
 
+def read_all_texts():
+    return dbc.read(TEXT_COLLECTION, dbc.SE_DB, False)
+
+
 def read_one(key: str) -> dict:
     # This should take a key and return the page dictionary
     # for that key. Return an empty dictionary of key not found.
-    result = {}
-    if key in text_dict:
-        result = text_dict[key]
-    return result
+    text_doc = dbc.read_one(TEXT_COLLECTION, {KEY: key})
+    if not text_doc:
+        return {}
+    return text_doc
 
 
 def main():
