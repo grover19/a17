@@ -78,7 +78,7 @@ class ManuscriptCreate(Resource):
     @api.response(HTTPStatus.CREATED, "Manuscript successfully created")
     # @api.response(HTTPStatus.BAD_REQUEST,
     #               "Missing required fields or invalid input")
-    def post(self):
+    def put(self):
         """
         Create a manuscript.
         """
@@ -113,7 +113,12 @@ class ManuscriptDelete(Resource):
         Delete a manuscript by its manuscript id.
         """
         id = id.strip()
-        return ms.delete_manuscript(id)
+        result = ms.delete_manuscript(id)
+
+        if not result:
+            raise wz.NotFound(f"No manuscript found with ID '{id}'")
+
+        return {"message": f"Manuscript with ID {id} deleted."}
 
 
 @api.route(MANUSCRIPTS_GET_EP)
@@ -203,7 +208,7 @@ class ManuscriptUpdate(Resource):
             }, HTTPStatus.OK
         except Exception as e:
             raise wz.InternalServerError(str(e))
-        
+
 
 @api.route(HELLO_EP)
 class HelloWorld(Resource):
