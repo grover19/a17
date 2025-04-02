@@ -1,7 +1,8 @@
 import data.db_connect as dbc
 import data.text as txt
 
-TEST_KEY = "test"
+CTEST_KEY = "create_test"
+UTEST_KEY = "update_test"
 
 def test_read():
     texts = txt.read()
@@ -51,10 +52,20 @@ def test_delete_not_exists():
 
 def test_create():
     texts = txt.read()
-    assert TEST_KEY not in texts
+    assert CTEST_KEY not in texts
 
-    txt.create(TEST_KEY, "testTitle", "testText")
+    txt.create(CTEST_KEY, "testTitle", "testText")
     texts = txt.read()
-    assert TEST_KEY in texts
-    assert texts[TEST_KEY]["testTitle"] == "testTitle"
-    assert texts[TEST_KEY]["testText"] == "testText"
+    assert CTEST_KEY in texts
+    assert texts[CTEST_KEY][txt.TITLE] == "testTitle"
+    assert texts[CTEST_KEY][txt.TEXT] == "testText"
+
+def test_update():
+    txt.create(UTEST_KEY, "updateTitle", "updateText")
+    texts = txt.read()
+
+    assert UTEST_KEY in texts
+    txt.update(UTEST_KEY, "UPDATEDTitle", "updateText")
+    texts = txt.read()
+    assert texts[CTEST_KEY][txt.TITLE] == "UPDATEDTitle"
+    assert texts[CTEST_KEY][txt.TEXT] == "updateText"
