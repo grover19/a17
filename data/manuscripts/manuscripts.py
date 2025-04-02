@@ -153,6 +153,9 @@ def delete_manuscript_history(his_id):
     his_id = ObjectId(his_id)
     return dbc.delete(MANUSCRIPT_HISTORY_COLLECT, {MONGO_ID: his_id})
 
+def read_manuscripts_by_author(author_name: str) -> list:
+    return dbc.read_one(MANUSCRIPTS_COLLECT, {'author': author_name})
+
 
 def delete_manuscript(manu_id):
 
@@ -174,3 +177,7 @@ def delete_manuscript(manu_id):
 def read_one_manuscript_history(his_id) -> dict:
     his_obj_id = create_mongo_id_object(his_obj_id)
     return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {MONGO_ID: his_obj_id})
+
+
+def read_manuscripts_by_author(author_name): 
+    return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {'author': author_name})
