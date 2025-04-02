@@ -1,6 +1,8 @@
 import data.db_connect as dbc
 import data.text as txt
 
+TEST_KEY = "test"
+
 def test_read():
     texts = txt.read()
     assert isinstance(texts, dict)
@@ -46,3 +48,13 @@ def test_delete_not_exists():
 
     texts = txt.read()
     assert phony_key not in texts
+
+def test_create():
+    texts = txt.read()
+    assert TEST_KEY not in texts
+
+    txt.create(TEST_KEY, "testTitle", "testText")
+    texts = txt.read()
+    assert TEST_KEY in texts
+    assert texts[TEST_KEY]["testTitle"] == "testTitle"
+    assert texts[TEST_KEY]["testText"] == "testText"
