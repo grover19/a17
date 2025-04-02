@@ -14,7 +14,7 @@
             // Value = role for that editor
             "alice@example.com": "Editor",
             "bob@example.com": "Reviewer"
-        },
+        }, # seperate editor from referees 
         
         "editor_comments": {
             // Key = same editor identifier
@@ -38,6 +38,5 @@
 }
 
 
-
-
+submited 
 
