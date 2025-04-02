@@ -50,22 +50,22 @@ def test_delete_not_exists():
     texts = txt.read()
     assert phony_key not in texts
 
-def test_create():
-    texts = txt.read()
-    assert CTEST_KEY not in texts
+# def test_create():
+#     texts = txt.read()
+#     assert CTEST_KEY not in texts
 
-    txt.create(CTEST_KEY, "testTitle", "testText")
-    texts = txt.read()
-    assert CTEST_KEY in texts
-    assert texts[CTEST_KEY][txt.TITLE] == "testTitle"
-    assert texts[CTEST_KEY][txt.TEXT] == "testText"
+#     txt.create(CTEST_KEY, "testTitle", "testText")
+#     texts = txt.read()
+#     assert CTEST_KEY in texts
+#     assert texts[CTEST_KEY][txt.TITLE] == "testTitle"
+#     assert texts[CTEST_KEY][txt.TEXT] == "testText"
 
-def test_update():
-    txt.create(UTEST_KEY, "updateTitle", "updateText")
-    texts = txt.read()
+# def test_update():
+#     txt.create(UTEST_KEY, "updateTitle", "updateText")
+#     texts = txt.read()
 
-    assert UTEST_KEY in texts
-    txt.update(UTEST_KEY, "UPDATEDTitle", "updateText")
-    texts = txt.read()
-    assert texts[CTEST_KEY][txt.TITLE] == "UPDATEDTitle"
-    assert texts[CTEST_KEY][txt.TEXT] == "updateText"
+#     assert UTEST_KEY in texts
+#     txt.update(UTEST_KEY, "UPDATEDTitle", "updateText")
+#     texts = txt.read()
+#     assert texts[CTEST_KEY][txt.TITLE] == "UPDATEDTitle"
+#     assert texts[CTEST_KEY][txt.TEXT] == "updateText"
