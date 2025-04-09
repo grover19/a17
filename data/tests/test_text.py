@@ -47,7 +47,7 @@ def test_delete_not_exists():
     # test for a non-existing key
     phony_key = "PHONY_KEY"
 
-    texts = txt.read()
+    texts = txt.read_one("PHONY_KEY")
     assert phony_key not in texts
 
 def test_create():
