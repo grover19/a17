@@ -50,15 +50,19 @@ def test_delete_not_exists():
     texts = txt.read()
     assert phony_key not in texts
 
-# def test_create():
-#     texts = txt.read()
-#     assert CTEST_KEY not in texts
+def test_create():
+    assert txt.read_one(CTEST_KEY) == {}
 
-#     txt.create(CTEST_KEY, "testTitle", "testText")
-#     texts = txt.read()
-#     assert CTEST_KEY in texts
-#     assert texts[CTEST_KEY][txt.TITLE] == "testTitle"
-#     assert texts[CTEST_KEY][txt.TEXT] == "testText"
+    txt.create(CTEST_KEY, "testTitle", "testText")
+    text = txt.read_one(CTEST_KEY)
+
+    assert text[txt.TITLE] == 'testTitle'
+    assert text[txt.TEXT] == 'testText'
+
+    delete_result = txt.delete(CTEST_KEY)    
+
+    assert delete_result == 1
+    assert txt.read_one(CTEST_KEY) == {}
 
 # def test_update():
 #     txt.create(UTEST_KEY, "updateTitle", "updateText")
