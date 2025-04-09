@@ -64,12 +64,20 @@ def test_create():
     assert delete_result == 1
     assert txt.read_one(CTEST_KEY) == {}
 
-# def test_update():
-#     txt.create(UTEST_KEY, "updateTitle", "updateText")
-#     texts = txt.read()
+def test_update():
+    txt.create(UTEST_KEY, "updateTitle", "updateText")
+    texts = txt.read_one(UTEST_KEY)
 
-#     assert UTEST_KEY in texts
-#     txt.update(UTEST_KEY, "UPDATEDTitle", "updateText")
-#     texts = txt.read()
-#     assert texts[CTEST_KEY][txt.TITLE] == "UPDATEDTitle"
-#     assert texts[CTEST_KEY][txt.TEXT] == "updateText"
+    assert texts[txt.TITLE] == 'updateTitle'
+    assert texts[txt.TEXT] == 'updateText'
+
+    txt.update(UTEST_KEY, "UPDATEDTitle", "updateText")
+
+    texts = txt.read_one(UTEST_KEY)
+    assert texts[txt.TITLE] == "UPDATEDTitle"
+    assert texts[txt.TEXT] == "updateText"
+
+    delete_result = txt.delete(UTEST_KEY)    
+
+    assert delete_result == 1
+    assert txt.read_one(UTEST_KEY) == {}
