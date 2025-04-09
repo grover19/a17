@@ -101,53 +101,33 @@ class ManuscriptCreate(Resource):
             "text": manu[ms.LATEST_VERSION][ms.TEXT],
         }
 
-
-@api.route(MANUSCRIPTS_DEL_EP)
-class ManuscriptDelete(Resource):
-    """
-    Delete a manuscript entry by its manuscript id.
-    """
-
-    def delete(self, id):
-        """
-        Delete a manuscript by its manuscript id.
-        """
-        id = id.strip()
-        result = ms.delete_manuscript(id)
-
-        if not result:
-            raise wz.NotFound(f"No manuscript found with ID '{id}'")
-
-        return {"message": f"Manuscript with ID {id} deleted."}
-
-
 @api.route(MANUSCRIPTS_GET_EP)
 class ManuscriptRetrieve(Resource):
     """
-    Retrieve a manuscript entry by its manuscript id.
+    Handles retrieving and deleting a manuscript by ID.
     """
 
     @api.response(HTTPStatus.OK, "Manuscript retrieved successfully")
-    @api.response(HTTPStatus.BAD_REQUEST, "Missing or invalid manuscript id")
-    @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
     def get(self, id):
-        """
-        Retrieve a manuscript by manuscript id.
-        """
         id = id.strip()
-        # Optionally validate the manuscript_id as a MongoDB ObjectId.
-
         manu = ms.read_one_manuscript(id)
         if not manu:
             raise wz.NotFound(f"No manuscript found with id '{id}'.")
-
-        # Assume the latest version is stored under ms.LATEST_VERSION.
-        latest_manu = manu["latest_version"]
+        latest_manu = manu[ms.LATEST_VERSION]
         return {
             "author": manu[ms.AUTHOR_NAME],
             "title": latest_manu[ms.TITLE],
             "text": latest_manu.get(ms.TEXT),
         }
+
+    @api.response(HTTPStatus.OK, "Manuscript deleted")
+    @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
+    def delete(self, id):
+        id = id.strip()
+        result = ms.delete_manuscript(id)
+        if not result:
+            raise wz.NotFound(f"No manuscript found with ID '{id}'")
+        return {"message": f"Manuscript with ID {id} deleted."}
 
 
 @api.route(MANUSCRIPTS_EP)
