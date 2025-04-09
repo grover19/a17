@@ -2,6 +2,8 @@
 <html>
 <head>
    <title>It's a Scrap!</title>
+   <link rel="stylesheet" type="text/css" href="style.css">
+
 </head>
 <body>
    <h1>Welcome</h1>
@@ -40,6 +42,22 @@
            <button type="submit">Add Person</button>
        </form>
    </div>
+    <!-- Section for Adding Text -->
+    <div id="add-text-section">
+        <h2>Add Text</h2>
+        <form id="add-text-form" method="POST" action="/add_text">
+            <label for="key">Key:</label>
+            <input type="text" id="key" name="key" required><br><br>
+
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title" required><br><br>
+
+            <label for="text">Text:</label>
+            <textarea id="text" name="text" rows="4" cols="50" required></textarea><br><br>
+
+            <button type="submit">Add Text</button>
+        </form>
+    </div>
 
 
    <script>
