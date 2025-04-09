@@ -101,6 +101,7 @@ class ManuscriptCreate(Resource):
             "text": manu[ms.LATEST_VERSION][ms.TEXT],
         }
 
+
 @api.route(MANUSCRIPTS_GET_EP)
 class ManuscriptRetrieve(Resource):
     """
