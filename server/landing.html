@@ -58,6 +58,60 @@
             <button type="submit">Add Text</button>
         </form>
     </div>
+    <!-- Section for Adding Manuscript -->
+    <div id="add-manuscript-section">
+        <h2>Add Manuscript</h2>
+        <form id="add-manuscript-form" method="POST" action="/add_manuscript">
+            <label for="author">Author:</label>
+            <input type="text" id="author" name="author" required><br><br>
+
+            <label for="title">Title:</label>
+            <input type="text" id="manuscript-title" name="title" required><br><br>
+
+            <label for="text">Text:</label>
+            <textarea id="manuscript-text" name="text" rows="4" cols="50" required></textarea><br><br>
+
+            <button type="submit">Add Manuscript</button>
+        </form>
+    </div>
+        <!-- Button to show the update form -->
+    <div id="toggle-update-manuscript">
+        <h2>Manuscript Options</h2>
+        <button onclick="toggleUpdateForm()">Update Manuscript</button>
+    </div>
+
+    <!-- Update Manuscript form (hidden by default) -->
+    <div id="update-manuscript-section" style="display: none;">
+        <h2>Update Manuscript</h2>
+        <form id="update-manuscript-form" method="POST" action="/update_manuscript">
+            <label for="manuscript_id">Manuscript ID:</label>
+            <input type="text" id="manuscript_id" name="manuscript_id" required><br><br>
+            
+            <label for="update_author">Author:</label>
+            <input type="text" id="update_author" name="author" required><br><br>
+
+            <label for="update_title">Title:</label>
+            <input type="text" id="update_title" name="title" required><br><br>
+
+            <label for="update_text">Text:</label>
+            <textarea id="update_text" name="text" rows="4" cols="50" required></textarea><br><br>
+
+            <button type="submit">Update Manuscript</button>
+        </form>
+    </div>
+
+    <script>
+    function toggleUpdateForm() {
+        var formSection = document.getElementById('update-manuscript-section');
+        if (formSection.style.display === 'none' || formSection.style.display === '') {
+            formSection.style.display = 'block';
+        } else {
+            formSection.style.display = 'none';
+        }
+    }
+    </script>
+
+
 
 
    <script>
