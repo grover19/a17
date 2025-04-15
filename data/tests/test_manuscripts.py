@@ -47,7 +47,7 @@ def test_create_manuscript():
     # Retrieve manuscript
     retrieved = manu.read_one_manuscript(manu_id)
     assert retrieved, "Manuscript not found in database"
-    
+
     # Validate fields
     assert retrieved.get("author") == test_data["author_name"], "Author mismatch"
     assert retrieved.get("latest_version", {}).get("title") == test_data["title"], "Title mismatch"
@@ -56,3 +56,43 @@ def test_create_manuscript():
     # Cleanup
     assert manu.delete_manuscript(manu_id) == 1, "Failed to delete manuscript"
     assert manu.read_one_manuscript(manu_id) is None, "Manuscript was not deleted"
+
+def test_transition_manuscript_state():
+    test_manu = manu.create_manuscript(
+        author_name="State Test Author",
+        title="Transition Test Manuscript",
+        text="Testing state transitions."
+    )
+    manu_id = str(test_manu["_id"])
+
+    new_state = manu.transition_manuscript_state(manu_id, "REJ")
+    assert new_state == "REJ"
+
+    try:
+        manu.transition_manuscript_state(manu_id, "REJ")
+        assert False
+    except ValueError as e:
+        assert "Invalid action" in str(e)
+
+    assert manu.delete_manuscript(manu_id) == 1
+
+def test_full_success_path():
+    test_manu = manu.create_manuscript(
+        author_name="FSM Path Author",
+        title="FSM Path Manuscript",
+        text="Testing full FSM success path"
+    )
+    manu_id = str(test_manu["_id"])
+
+    # manually move state to REV since im skipping ARF/referee logic
+    dbc.update(manu.MANUSCRIPTS_COLLECT, {manu.MONGO_ID: ObjectId(manu_id)}, {
+        f"{manu.LATEST_VERSION}.{manu.STATE}": "REV"
+    })
+
+    assert manu.transition_manuscript_state(manu_id, "ACCWITHREV") == "AUTHREVISION"
+    assert manu.transition_manuscript_state(manu_id, "DON") == "EDREV"
+    assert manu.transition_manuscript_state(manu_id, "ACC") == "CED"
+    assert manu.transition_manuscript_state(manu_id, "DON") == "AUR"
+    assert manu.transition_manuscript_state(manu_id, "DON") == "FORM"
+    assert manu.transition_manuscript_state(manu_id, "DON") == "PUB"
+    assert manu.delete_manuscript(manu_id) == 1

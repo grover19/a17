@@ -4,7 +4,7 @@ import  data.manuscripts.states as states
 import data.people as ppl
 from bson.objectid import ObjectId
 from copy import deepcopy
-
+from . import query
 
 
 # --- Collection Names ---
@@ -179,5 +179,31 @@ def read_one_manuscript_history(his_id) -> dict:
     return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {MONGO_ID: his_obj_id})
 
 
-def read_manuscripts_by_author(author_name): 
+def read_manuscripts_by_author(author_name):
     return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {'author': author_name})
+
+
+def transition_manuscript_state(manu_id: str, action: str, ref: str = None):
+    manu = read_one_manuscript(manu_id)
+    if not manu:
+        raise ValueError(f"No manuscript found with ID: {manu_id}")
+
+    curr_state = manu[LATEST_VERSION][STATE]
+    manu_dict = manu[LATEST_VERSION]
+
+    new_state = query.handle_action(curr_state, action, manu=manu_dict, ref=ref)
+
+    update_result = dbc.update(
+        MANUSCRIPTS_COLLECT,
+        {MONGO_ID: ObjectId(manu_id)},
+        {
+            f"{LATEST_VERSION}.{STATE}": new_state,
+            f"{LATEST_VERSION}.{EDITORS}": manu_dict.get(EDITORS, {}),
+            f"{LATEST_VERSION}.{EDITOR_COMMENTS}": manu_dict.get(EDITOR_COMMENTS, {})
+        }
+    )
+
+    if not update_result.acknowledged:
+        raise Exception(f"Failed to update manuscript {manu_id} to state {new_state}")
+
+    return new_state

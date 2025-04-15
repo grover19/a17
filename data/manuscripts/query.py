@@ -7,17 +7,38 @@ IN_REF_REV = 'REV'
 REJECTED = 'REJ'
 SUBMITTED = 'SUB'
 WITHDRAWN = 'WIT'
+AUTHOR_REVISIONS = 'AUTHREVISION'
+ACCWITHREV = "ACCWITHREV"
+EDITOR_REVIEW = 'EDREV'
+FORMATTING = 'FORM'
+PUBLISHED = 'PUB'
 TEST_STATE = SUBMITTED
+
+STATE_NAME_TO_CODE = {
+    "Submitted": "SUB",
+    "Referee Review": "REV",
+    "Copy Edit": "CED",
+    "Author Revisions": "AUTHREVISION",
+    "Editor Review": "EDREV",
+    "AUTHOR REVIEW": "AUR",
+    "Formatting": "FORM",
+    "Published": "PUB",
+    "Rejected": "REJ",
+    "Withdrawn": "WIT",
+}
 
 VALID_STATES = [
     AUTHOR_REV,
+    AUTHOR_REVISIONS,
     COPY_EDIT,
+    EDITOR_REVIEW,
+    FORMATTING,
     IN_REF_REV,
+    PUBLISHED,
     REJECTED,
     SUBMITTED,
     WITHDRAWN,
 ]
-
 
 SAMPLE_MANU = {
     flds.TITLE: 'Short module import names in Python',
@@ -36,6 +57,7 @@ def is_valid_state(state: str) -> bool:
 
 # actions:
 ACCEPT = 'ACC'
+ACCWITHREV = 'ACCWITHREV'
 ASSIGN_REF = 'ARF'
 DELETE_REF = 'DRF'
 DONE = 'DON'
@@ -46,6 +68,7 @@ TEST_ACTION = ACCEPT
 
 VALID_ACTIONS = [
     ACCEPT,
+    ACCWITHREV,
     ASSIGN_REF,
     DELETE_REF,
     DONE,
@@ -102,6 +125,21 @@ STATE_TABLE = {
         DELETE_REF: {
             FUNC: delete_ref,
         },
+        ACCWITHREV: {
+            FUNC: lambda **kwargs: AUTHOR_REVISIONS,
+        },
+        **COMMON_ACTIONS,
+    },
+    AUTHOR_REVISIONS: {
+        DONE: {
+            FUNC: lambda **kwargs: EDITOR_REVIEW,
+        },
+        **COMMON_ACTIONS,
+    },
+    EDITOR_REVIEW: {
+        ACCEPT: {
+            FUNC: lambda **kwargs: COPY_EDIT,
+        },
         **COMMON_ACTIONS,
     },
     COPY_EDIT: {
@@ -111,6 +149,15 @@ STATE_TABLE = {
         **COMMON_ACTIONS,
     },
     AUTHOR_REV: {
+        DONE: {
+            FUNC: lambda **kwargs: FORMATTING,
+        },
+        **COMMON_ACTIONS,
+    },
+    FORMATTING: {
+        DONE: {
+            FUNC: lambda **kwargs: PUBLISHED,
+        },
         **COMMON_ACTIONS,
     },
     REJECTED: {
@@ -119,6 +166,7 @@ STATE_TABLE = {
     WITHDRAWN: {
         **COMMON_ACTIONS,
     },
+    PUBLISHED: {},
 }
 
 
@@ -129,10 +177,13 @@ def get_valid_actions_by_state(state: str):
 
 
 def handle_action(curr_state, action, **kwargs) -> str:
+    # Convert to FSM-recognized code if it's a long-form string
+    curr_state = STATE_NAME_TO_CODE.get(curr_state, curr_state)
+
     if curr_state not in STATE_TABLE:
         raise ValueError(f'Bad state: {curr_state}')
     if action not in STATE_TABLE[curr_state]:
-        raise ValueError(f'{action} not available in {curr_state}')
+        raise ValueError(f'Invalid action {action} for state {curr_state}')
     return STATE_TABLE[curr_state][action][FUNC](**kwargs)
 
 
