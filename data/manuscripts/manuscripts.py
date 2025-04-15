@@ -24,6 +24,7 @@ VERSION = 'version'
 TEXT = 'text'
 EDITORS = 'editors'
 EDITOR_COMMENTS = 'editor_comments'
+REFEREES = 'referees'
 
 
 # --- EDITORS --- #
@@ -93,6 +94,7 @@ def create_simple_manuscript(author_name,  title, text):
             TITLE: title,
             VERSION: states.DEFAULT_VERSION,
             TEXT: text,
+            REFEREES: [],
             EDITORS: {},
             EDITOR_COMMENTS: {}
         }
@@ -188,18 +190,27 @@ def transition_manuscript_state(manu_id: str, action: str, ref: str = None):
     if not manu:
         raise ValueError(f"No manuscript found with ID: {manu_id}")
 
-    curr_state = manu[LATEST_VERSION][STATE]
-    manu_dict = manu[LATEST_VERSION]
+    latest = manu[LATEST_VERSION]
 
-    new_state = query.handle_action(curr_state, action, manu=manu_dict, ref=ref)
+    # Initialize referees list if it doesn't exist (backward compatible)
+    if REFEREES not in latest:
+        latest[REFEREES] = []
+
+    new_state = query.handle_action(
+        curr_state=latest[STATE],
+        action=action,
+        manu=latest,
+        ref=ref
+    )
 
     update_result = dbc.update(
         MANUSCRIPTS_COLLECT,
         {MONGO_ID: ObjectId(manu_id)},
         {
             f"{LATEST_VERSION}.{STATE}": new_state,
-            f"{LATEST_VERSION}.{EDITORS}": manu_dict.get(EDITORS, {}),
-            f"{LATEST_VERSION}.{EDITOR_COMMENTS}": manu_dict.get(EDITOR_COMMENTS, {})
+            f"{LATEST_VERSION}.{EDITORS}": latest.get(EDITORS, {}),
+            f"{LATEST_VERSION}.{EDITOR_COMMENTS}": latest.get(EDITOR_COMMENTS, {}),
+            f"{LATEST_VERSION}.{REFEREES}": latest.get(REFEREES, [])
         }
     )
 

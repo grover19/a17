@@ -1,6 +1,7 @@
 import data.db_connect as dbc
 import data.manuscripts.manuscripts as manu
 from bson.objectid import ObjectId
+import pytest
 
 def test_delete_exists():
     # Create a test manuscript
@@ -65,14 +66,10 @@ def test_transition_manuscript_state():
     )
     manu_id = str(test_manu["_id"])
 
-    new_state = manu.transition_manuscript_state(manu_id, "REJ")
-    assert new_state == "REJ"
+    assert manu.transition_manuscript_state(manu_id, "ARF", ref="ref1") == "REV"
 
-    try:
+    with pytest.raises(ValueError, match="Invalid action"):
         manu.transition_manuscript_state(manu_id, "REJ")
-        assert False
-    except ValueError as e:
-        assert "Invalid action" in str(e)
 
     assert manu.delete_manuscript(manu_id) == 1
 
@@ -84,11 +81,7 @@ def test_full_success_path():
     )
     manu_id = str(test_manu["_id"])
 
-    # manually move state to REV since im skipping ARF/referee logic
-    dbc.update(manu.MANUSCRIPTS_COLLECT, {manu.MONGO_ID: ObjectId(manu_id)}, {
-        f"{manu.LATEST_VERSION}.{manu.STATE}": "REV"
-    })
-
+    assert manu.transition_manuscript_state(manu_id, "ARF", ref="ref1") == "REV"
     assert manu.transition_manuscript_state(manu_id, "ACCWITHREV") == "AUTHREVISION"
     assert manu.transition_manuscript_state(manu_id, "DON") == "EDREV"
     assert manu.transition_manuscript_state(manu_id, "ACC") == "CED"
