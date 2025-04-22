@@ -218,3 +218,7 @@ def transition_manuscript_state(manu_id: str, action: str, ref: str = None):
         raise Exception(f"Failed to update manuscript {manu_id} to state {new_state}")
 
     return new_state
+
+
+def get_valid_actions(curr_state: str) -> list:
+    return query.get_valid_actions_by_state(curr_state)

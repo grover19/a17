@@ -272,3 +272,20 @@ def test_update_text(mock_update):
 
     mock_update.assert_called_once_with(payload["key"], payload["title"], payload["text"])
 
+
+@patch("data.manuscripts.manuscripts.read_one_manuscript", autospec=True)
+@patch("data.manuscripts.manuscripts.get_valid_actions", autospec=True)
+def test_get_valid_actions(mock_get_valid, mock_read):
+    mock_id = str(ObjectId())
+    mock_state = "SUB"
+    mock_read.return_value = {
+        ms.LATEST_VERSION: {
+            ms.STATE: mock_state
+        }
+    }
+    mock_get_valid.return_value = ["ARF", "REJ", "WIT"]
+    resp = TEST_CLIENT.get(f"/manuscripts/{mock_id}/valid_actions")
+    assert resp.status_code == HTTPStatus.OK
+    resp_json = resp.get_json()
+    assert resp_json["current_state"] == mock_state
+    assert isinstance(resp_json["valid_actions"], list)

@@ -48,6 +48,7 @@ MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/<id>"
 MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/<id>"
 MANUSCRIPTS_UPDATE_EP = f"{MANUSCRIPTS_EP}/update"
 MANUSCRIPTS_RECEIVE_ACTION_EP = f"{MANUSCRIPTS_EP}/receive_action"
+MANUSCRIPTS_VALID_ACTIONS_EP = f"{MANUSCRIPTS_EP}/<id>/valid_actions"
 
 
 MANUSCRIPT_UPDATE_FLDS = api.model(
@@ -223,6 +224,31 @@ class ManuscriptReceiveAction(Resource):
             }, HTTPStatus.OK
         except Exception as e:
             raise wz.BadRequest(str(e))
+
+
+@api.route(MANUSCRIPTS_VALID_ACTIONS_EP)
+class ManuscriptValidActions(Resource):
+    """
+    Get valid actions for the current state of a manuscript.
+    """
+
+    @api.response(HTTPStatus.OK, "List of valid actions")
+    @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
+    def get(self, id):
+        """
+        Retrieve the valid actions for a manuscript
+        """
+        id = id.strip()
+        manu = ms.read_one_manuscript(id)
+        if not manu:
+            raise wz.NotFound(f"No manuscript found with ID {id}")
+
+        curr_state = manu[ms.LATEST_VERSION][ms.STATE]
+        valid_actions = ms.get_valid_actions(curr_state)
+        return {
+            "current_state": curr_state,
+            "valid_actions": valid_actions
+        }
 
 
 @api.route(HELLO_EP)
