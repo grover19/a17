@@ -236,6 +236,23 @@ def test_delete_manuscript_not_found(mock_delete):
     assert "No manuscript found with ID" in resp_json["message"]
 
 
+@patch("data.manuscripts.manuscripts.transition_manuscript_state", autospec=True, return_value="REV")
+def test_receive_action_success(mock_transition):
+    payload = {
+        "id": str(ObjectId()),
+        "action": "ARF",
+        "ref": "reviewer@example.com"
+    }
+
+    resp = TEST_CLIENT.post("/manuscripts/receive_action", json=payload)
+    assert resp.status_code == HTTPStatus.OK
+
+    resp_json = resp.get_json()
+    assert resp_json["state"] == "REV"
+    assert f"Manuscript transitioned to {resp_json['state']}" in resp_json["message"]
+    mock_transition.assert_called_once_with(payload["id"], payload["action"], ref=payload["ref"])
+
+
 @patch("data.text.update", autospec=True)
 def test_update_text(mock_update):
     payload = {

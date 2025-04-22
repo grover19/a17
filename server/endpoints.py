@@ -47,6 +47,8 @@ MANUSCRIPTS_CREATE_EP = f"{MANUSCRIPTS_EP}/create"
 MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/<id>"
 MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/<id>"
 MANUSCRIPTS_UPDATE_EP = f"{MANUSCRIPTS_EP}/update"
+MANUSCRIPTS_RECEIVE_ACTION_EP = f"{MANUSCRIPTS_EP}/receive_action"
+
 
 MANUSCRIPT_UPDATE_FLDS = api.model(
     "UpdateManuscript",
@@ -189,6 +191,38 @@ class ManuscriptUpdate(Resource):
             }, HTTPStatus.OK
         except Exception as e:
             raise wz.InternalServerError(str(e))
+
+
+@api.route(MANUSCRIPTS_RECEIVE_ACTION_EP)
+class ManuscriptReceiveAction(Resource):
+    @api.expect(api.model(
+        "ManuscriptTransition",
+        {
+            "id": fields.String(required=True),
+            "action": fields.String(required=True),
+            "ref": fields.String(required=False)
+        }
+    ))
+    def post(self):
+        """
+        Receive an action and transition a manuscript's state
+        """
+        data = request.json
+        manu_id = data.get("id")
+        action = data.get("action")
+        ref = data.get("ref")
+        try:
+            new_state = ms.transition_manuscript_state(
+                manu_id,
+                action,
+                ref=ref
+            )
+            return {
+                "message": f"Manuscript transitioned to {new_state}",
+                "state": new_state
+            }, HTTPStatus.OK
+        except Exception as e:
+            raise wz.BadRequest(str(e))
 
 
 @api.route(HELLO_EP)
