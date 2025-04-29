@@ -289,3 +289,39 @@ def test_get_valid_actions(mock_get_valid, mock_read):
     resp_json = resp.get_json()
     assert resp_json["current_state"] == mock_state
     assert isinstance(resp_json["valid_actions"], list)
+
+
+@patch("security.security.read", autospec=True, return_value={"people": {"create": {}}})
+def test_read_security_settings(mock_read):
+    response = TEST_CLIENT.get("/security")
+    assert response.status_code == HTTPStatus.OK
+
+    resp_json = response.get_json()
+    assert "people" in resp_json
+    assert "create" in resp_json["people"]
+
+
+@patch("security.security.is_permitted", autospec=True, return_value=True)
+def test_security_permission_check_allowed(mock_is_permitted):
+    payload = {
+        "feature_name": "people",
+        "action": "create",
+        "user_id": "ejc369@nyu.edu"
+    }
+    response = TEST_CLIENT.post("/security/check", json=payload)
+    assert response.status_code == HTTPStatus.OK
+    resp_json = response.get_json()
+    assert resp_json["message"] == "User has permission."
+
+
+@patch("security.security.is_permitted", autospec=True, return_value=False)
+def test_security_permission_check_denied(mock_is_permitted):
+    payload = {
+        "feature_name": "people",
+        "action": "create",
+        "user_id": "unauthorized_user@nyu.edu"
+    }
+    response = TEST_CLIENT.post("/security/check", json=payload)
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    resp_json = response.get_json()
+    assert resp_json["message"] == "User does not have permission."

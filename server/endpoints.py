@@ -14,6 +14,7 @@ import werkzeug.exceptions as wz
 import data.people as ppl
 import data.text as txt
 import data.manuscripts.manuscripts as ms
+from security import security as sec
 
 
 app = Flask(__name__)
@@ -528,6 +529,56 @@ class TextUpdate(Resource):
             }, HTTPStatus.OK
         except ValueError as e:
             raise wz.NotFound(str(e))
+
+
+@api.route("/security")
+class SecurityRetrieve(Resource):
+    """
+    Retrieve the current security settings.
+    """
+
+    @api.response(HTTPStatus.OK, "Security settings retrieved successfully")
+    def get(self):
+        """
+        Retrieve security settings
+        """
+        settings = sec.read()
+        if not settings:
+            raise wz.NotFound("No security settings found.")
+        return settings
+
+
+@api.route("/security/check")
+class SecurityPermissionCheck(Resource):
+    """
+    Check if a user has permission to perform an action on a feature.
+    """
+
+    @api.expect(api.model(
+        "SecurityPermissionCheck",
+        {
+            "feature_name": fields.String(required=True),
+            "action": fields.String(required=True),
+            "user_id": fields.String(required=True),
+        }
+    ))
+    @api.response(HTTPStatus.OK, "Permission check completed successfully")
+    @api.response(HTTPStatus.FORBIDDEN, "User does not have permission")
+    def post(self):
+        """
+        Check if exisitng person has permission
+        """
+        data = request.get_json()
+        feature_name = data.get("feature_name")
+        action = data.get("action")
+        user_id = data.get("user_id")
+
+        if sec.is_permitted(feature_name, action, user_id):
+            return {"message": "User has permission."}, HTTPStatus.OK
+        else:
+            return {
+                "message": "User does not have permission."
+            }, HTTPStatus.FORBIDDEN
 
 
 if __name__ == "__main__":
