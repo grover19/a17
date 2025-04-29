@@ -3,9 +3,11 @@ include common.mk
 # Our directories
 API_DIR = server
 DB_DIR = data
+SECURITY_DIR = security
 REQ_DIR = .
 
-PYTHONPATH = $(shell pwd)
+export PYTHONPATH := $(shell pwd)
+
 PYTESTFLAGS = -vv --verbose --cov-branch --cov-report term-missing --tb=short -W ignore::FutureWarning
 
 FORCE:
@@ -17,8 +19,9 @@ github: FORCE
 	git push origin master
 
 all_tests: FORCE
-	PYTHONPATH=$(PYTHONPATH) $(MAKE) -C $(API_DIR) tests
-	PYTHONPATH=$(PYTHONPATH) $(MAKE) -C $(DB_DIR) tests
+	$(MAKE) -C $(API_DIR) tests
+	$(MAKE) -C $(DB_DIR) tests
+	$(MAKE) -C $(SECURITY_DIR) tests
 
 dev_env: FORCE
 	pip install -r $(REQ_DIR)/requirements-dev.txt
