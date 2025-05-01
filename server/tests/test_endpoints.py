@@ -328,6 +328,30 @@ def test_get_valid_actions(mock_read, mock_create):
     assert isinstance(data["valid_actions"], list)
 
 
+@patch("data.manuscripts.query.get_valid_actions_by_state", autospec=True)
+def test_valid_actions_by_state_valid(mock_get_actions):
+    mock_get_actions.return_value = ["ACC", "REJ"]
+    valid_state = "SUB"
+    resp = TEST_CLIENT.get(f"/manuscripts/valid_actions/{valid_state}")
+    assert resp.status_code == HTTPStatus.OK
+    resp_json = resp.get_json()
+    assert resp_json["state"] == valid_state
+    assert isinstance(resp_json["valid_actions"], list)
+    assert "valid_states" not in resp_json
+
+
+@patch("data.manuscripts.query.get_valid_actions_by_state", autospec=True)
+def test_valid_actions_by_state_invalid(mock_get_actions):
+    mock_get_actions.side_effect = KeyError("Invalid state")
+    invalid_state = "XYZ"
+    resp = TEST_CLIENT.get(f"/manuscripts/valid_actions/{invalid_state}")
+    assert resp.status_code == HTTPStatus.BAD_REQUEST
+    resp_json = resp.get_json()
+    assert "message" in resp_json
+    assert "valid_states" in resp_json
+    assert isinstance(resp_json["valid_states"], list)
+
+
 @patch("security.security.read", autospec=True, return_value={"people": {"create": {}}})
 def test_read_security_settings(mock_read):
     response = TEST_CLIENT.get("/security")

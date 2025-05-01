@@ -115,6 +115,9 @@ class ManuscriptRetrieve(Resource):
 
     @api.response(HTTPStatus.OK, "Manuscript retrieved successfully")
     def get(self, id):
+        """
+        Retrieve a manuscript by its ID
+        """
         id = id.strip()
         manu = ms.read_one_manuscript(id)
         if not manu:
@@ -129,6 +132,9 @@ class ManuscriptRetrieve(Resource):
     @api.response(HTTPStatus.OK, "Manuscript deleted")
     @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
     def delete(self, id):
+        """
+        Delete a manuscript
+        """
         id = id.strip()
         result = ms.delete_manuscript(id)
         if not result:
@@ -259,6 +265,32 @@ class ManuscriptValidActions(Resource):
 
         except Exception as e:
             raise wz.InternalServerError(str(e))
+
+
+get_valid_actions_by_state = query.get_valid_actions_by_state
+VALID_STATES = query.VALID_STATES
+
+
+@api.route("/manuscripts/valid_actions/<string:state>")
+class ValidActionsByState(Resource):
+    @api.response(HTTPStatus.OK, "List of valid actions for state")
+    @api.response(HTTPStatus.BAD_REQUEST, "Invalid state")
+    def get(self, state):
+        """
+        Retrieve the valid actions for a state
+        """
+        state = state.strip()
+        if state not in VALID_STATES:
+            return {
+                "message": f"Invalid state: {state}",
+                "valid_states": VALID_STATES
+            }, HTTPStatus.BAD_REQUEST
+
+        actions = list(get_valid_actions_by_state(state))
+        return {
+            "state": state,
+            "valid_actions": actions
+        }, HTTPStatus.OK
 
 
 @api.route(HELLO_EP)
@@ -562,27 +594,34 @@ class SecurityPermissionCheck(Resource):
     """
     Check if a user has permission to perform an action on a feature.
     """
-
     @api.expect(api.model(
         "SecurityPermissionCheck",
         {
             "feature_name": fields.String(required=True),
             "action": fields.String(required=True),
             "user_id": fields.String(required=True),
+            "login_key": fields.String(required=False),
+            "ip_address": fields.String(required=False),
+            "dual_factor": fields.String(required=False),
         }
     ))
     @api.response(HTTPStatus.OK, "Permission check completed successfully")
     @api.response(HTTPStatus.FORBIDDEN, "User does not have permission")
     def post(self):
         """
-        Check if exisitng person has permission
+        Check if existing person has permission
         """
         data = request.get_json()
         feature_name = data.get("feature_name")
         action = data.get("action")
         user_id = data.get("user_id")
-
-        if sec.is_permitted(feature_name, action, user_id):
+        excluded_keys = ["feature_name", "action", "user_id"]
+        extra_kwargs = {
+            k: v
+            for k, v in data.items()
+            if k not in excluded_keys
+        }
+        if sec.is_permitted(feature_name, action, user_id, **extra_kwargs):
             return {"message": "User has permission."}, HTTPStatus.OK
         else:
             return {
