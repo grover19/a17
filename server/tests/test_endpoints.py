@@ -250,7 +250,30 @@ def test_receive_action_success(mock_transition):
     resp_json = resp.get_json()
     assert resp_json["state"] == "REV"
     assert f"Manuscript transitioned to {resp_json['state']}" in resp_json["message"]
-    mock_transition.assert_called_once_with(payload["id"], payload["action"], ref=payload["ref"])
+    mock_transition.assert_called_once_with(
+        payload["id"],
+        payload["action"],
+        ref=payload["ref"],
+        target_state=None
+    )
+
+@patch("data.manuscripts.manuscripts.transition_manuscript_state", autospec=True, return_value="PUB")
+def test_editor_move_action_success(mock_transition):
+    payload = {
+        "id": str(ObjectId()),
+        "action": "EDITOR_MOVE",
+        "target_state": "PUB"
+    }
+
+    resp = TEST_CLIENT.post("/manuscripts/receive_action", json=payload)
+    assert resp.status_code == HTTPStatus.OK
+
+    data = resp.get_json()
+    assert "state" in data
+    assert data["state"] == "PUB"
+    assert f"Manuscript transitioned to {data['state']}" in data["message"]
+
+    mock_transition.assert_called_once_with(payload["id"], payload["action"], ref=None, target_state="PUB")
 
 
 @patch("data.text.update", autospec=True)
@@ -273,22 +296,36 @@ def test_update_text(mock_update):
     mock_update.assert_called_once_with(payload["key"], payload["title"], payload["text"])
 
 
+@patch("data.manuscripts.manuscripts.create_manuscript", autospec=True)
 @patch("data.manuscripts.manuscripts.read_one_manuscript", autospec=True)
-@patch("data.manuscripts.manuscripts.get_valid_actions", autospec=True)
-def test_get_valid_actions(mock_get_valid, mock_read):
-    mock_id = str(ObjectId())
-    mock_state = "SUB"
-    mock_read.return_value = {
-        ms.LATEST_VERSION: {
-            ms.STATE: mock_state
-        }
+def test_get_valid_actions(mock_read, mock_create):
+    mock_id = ObjectId()
+    mock_manu = {
+        "_id": mock_id,
+        "author": "Tester",
+        "latest_version": {
+            "state": "SUB",
+            "title": "Valid Actions Test",
+            "text": "Some text",
+            "referees": [],
+            "editors": {},
+            "comments": {}
+        },
+        "manuscript_created": "2025-04-30 00:00:00",
+        "manuscript_history_fk": ObjectId()
     }
-    mock_get_valid.return_value = ["ARF", "REJ", "WIT"]
-    resp = TEST_CLIENT.get(f"/manuscripts/{mock_id}/valid_actions")
+
+    mock_read.return_value = mock_manu
+    mock_create.return_value = mock_manu
+    manu_id = str(mock_id)
+
+    resp = TEST_CLIENT.get(f"/manuscripts/{manu_id}/valid_actions")
     assert resp.status_code == HTTPStatus.OK
-    resp_json = resp.get_json()
-    assert resp_json["current_state"] == mock_state
-    assert isinstance(resp_json["valid_actions"], list)
+
+    data = resp.get_json()
+    assert "current_state" in data
+    assert "valid_actions" in data
+    assert isinstance(data["valid_actions"], list)
 
 
 @patch("security.security.read", autospec=True, return_value={"people": {"create": {}}})

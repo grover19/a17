@@ -13,6 +13,7 @@ EDITOR_REVIEW = 'EDREV'
 FORMATTING = 'FORM'
 PUBLISHED = 'PUB'
 TEST_STATE = SUBMITTED
+EDITOR_MOVE = "EDITOR_MOVE"
 
 STATE_NAME_TO_CODE = {
     "Submitted": "SUB",
@@ -85,8 +86,7 @@ def is_valid_action(action: str) -> bool:
     return action in VALID_ACTIONS
 
 
-def assign_ref(manu: dict, ref: str, extra=None) -> str:
-    print(extra)
+def assign_ref(manu: dict, ref: str, **kwargs) -> str:
     manu[flds.REFEREES].append(ref)
     return IN_REF_REV
 
@@ -100,6 +100,10 @@ def delete_ref(manu: dict, ref: str) -> str:
         return SUBMITTED
 
 
+def handle_editor_move(**kwargs):
+    return kwargs.get("target_state", SUBMITTED)
+
+
 FUNC = 'f'
 
 COMMON_ACTIONS = {
@@ -110,63 +114,56 @@ COMMON_ACTIONS = {
 
 STATE_TABLE = {
     SUBMITTED: {
-        ASSIGN_REF: {
-            FUNC: assign_ref,
-        },
-        REJECT: {
-            FUNC: lambda **kwargs: REJECTED,
-        },
+        ASSIGN_REF: {FUNC: assign_ref},
+        REJECT: {FUNC: lambda **kwargs: REJECTED},
+        EDITOR_MOVE: {FUNC: handle_editor_move},
         **COMMON_ACTIONS,
     },
     IN_REF_REV: {
-        ASSIGN_REF: {
-            FUNC: assign_ref,
-        },
-        DELETE_REF: {
-            FUNC: delete_ref,
-        },
-        ACCWITHREV: {
-            FUNC: lambda **kwargs: AUTHOR_REVISIONS,
-        },
+        ASSIGN_REF: {FUNC: assign_ref},
+        DELETE_REF: {FUNC: delete_ref},
+        ACCEPT: {FUNC: lambda **kwargs: COPY_EDIT},
+        ACCWITHREV: {FUNC: lambda **kwargs: AUTHOR_REVISIONS},
+        REJECT: {FUNC: lambda **kwargs: REJECTED},
+        EDITOR_MOVE: {FUNC: handle_editor_move},
         **COMMON_ACTIONS,
     },
     AUTHOR_REVISIONS: {
-        DONE: {
-            FUNC: lambda **kwargs: EDITOR_REVIEW,
-        },
+        DONE: {FUNC: lambda **kwargs: EDITOR_REVIEW},
+        EDITOR_MOVE: {FUNC: handle_editor_move},
         **COMMON_ACTIONS,
     },
     EDITOR_REVIEW: {
-        ACCEPT: {
-            FUNC: lambda **kwargs: COPY_EDIT,
-        },
+        ACCEPT: {FUNC: lambda **kwargs: COPY_EDIT},
+        EDITOR_MOVE: {FUNC: handle_editor_move},
         **COMMON_ACTIONS,
     },
     COPY_EDIT: {
-        DONE: {
-            FUNC: lambda **kwargs: AUTHOR_REV,
-        },
+        DONE: {FUNC: lambda **kwargs: AUTHOR_REV},
+        EDITOR_MOVE: {FUNC: handle_editor_move},
         **COMMON_ACTIONS,
     },
     AUTHOR_REV: {
-        DONE: {
-            FUNC: lambda **kwargs: FORMATTING,
-        },
+        DONE: {FUNC: lambda **kwargs: FORMATTING},
+        EDITOR_MOVE: {FUNC: handle_editor_move},
         **COMMON_ACTIONS,
     },
     FORMATTING: {
-        DONE: {
-            FUNC: lambda **kwargs: PUBLISHED,
-        },
+        DONE: {FUNC: lambda **kwargs: PUBLISHED},
+        EDITOR_MOVE: {FUNC: handle_editor_move},
         **COMMON_ACTIONS,
     },
     REJECTED: {
+        EDITOR_MOVE: {FUNC: handle_editor_move},
         **COMMON_ACTIONS,
     },
     WITHDRAWN: {
+        EDITOR_MOVE: {FUNC: handle_editor_move},
         **COMMON_ACTIONS,
     },
-    PUBLISHED: {},
+    PUBLISHED: {
+        EDITOR_MOVE: {FUNC: handle_editor_move},
+    },
 }
 
 

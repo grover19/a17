@@ -14,6 +14,7 @@ import werkzeug.exceptions as wz
 import data.people as ppl
 import data.text as txt
 import data.manuscripts.manuscripts as ms
+from data.manuscripts import query
 from security import security as sec
 
 
@@ -140,20 +141,17 @@ class ManuscriptRetrieveAll(Resource):
     """
     Retrieve all manuscript enties
     """
-
-    @api.response(HTTPStatus.OK, "Manuscript retrieved successfully")
-    @api.response(HTTPStatus.BAD_REQUEST, "Missing or invalid manuscript id")
-    @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
+    @api.response(HTTPStatus.OK, "Manuscripts retrieved successfully")
+    @api.response(HTTPStatus.NOT_FOUND, "No manuscripts found")
     def get(self):
         """
-        Retrieve a manuscript by manuscript id.
+        Retrieve all manuscripts.
         """
         all_manu = ms.read_all_manuscripts()
         if not all_manu:
-            raise wz.NotFound(f"No manuscript found with id '{id}'.")
+            raise wz.NotFound("No manuscripts found.")
 
-        # Assume the latest version is stored under ms.LATEST_VERSION.
-        return all_manu
+        return all_manu, HTTPStatus.OK
 
 
 @api.route(MANUSCRIPTS_UPDATE_EP)
@@ -202,7 +200,8 @@ class ManuscriptReceiveAction(Resource):
         {
             "id": fields.String(required=True),
             "action": fields.String(required=True),
-            "ref": fields.String(required=False)
+            "ref": fields.String(required=False),
+            "target_state": fields.String(required=False),
         }
     ))
     def post(self):
@@ -213,11 +212,13 @@ class ManuscriptReceiveAction(Resource):
         manu_id = data.get("id")
         action = data.get("action")
         ref = data.get("ref")
+        target_state = data.get("target_state")
         try:
             new_state = ms.transition_manuscript_state(
                 manu_id,
                 action,
-                ref=ref
+                ref=ref,
+                target_state=target_state
             )
             return {
                 "message": f"Manuscript transitioned to {new_state}",
@@ -239,17 +240,25 @@ class ManuscriptValidActions(Resource):
         """
         Retrieve the valid actions for a manuscript
         """
-        id = id.strip()
-        manu = ms.read_one_manuscript(id)
-        if not manu:
-            raise wz.NotFound(f"No manuscript found with ID {id}")
+        try:
+            id = id.strip()
+            manu = ms.read_one_manuscript(id)
+            if not manu:
+                raise wz.NotFound(f"No manuscript found with ID {id}")
 
-        curr_state = manu[ms.LATEST_VERSION][ms.STATE]
-        valid_actions = ms.get_valid_actions(curr_state)
-        return {
-            "current_state": curr_state,
-            "valid_actions": valid_actions
-        }
+            curr_state = manu[ms.LATEST_VERSION][ms.STATE]
+            curr_state_code = query.STATE_NAME_TO_CODE.get(
+                curr_state,
+                curr_state
+            )
+            valid_actions = list(ms.get_valid_actions(curr_state_code))
+            return {
+                "current_state": curr_state,
+                "valid_actions": valid_actions
+            }, HTTPStatus.OK
+
+        except Exception as e:
+            raise wz.InternalServerError(str(e))
 
 
 @api.route(HELLO_EP)

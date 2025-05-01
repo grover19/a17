@@ -185,22 +185,25 @@ def read_manuscripts_by_author(author_name):
     return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {'author': author_name})
 
 
-def transition_manuscript_state(manu_id: str, action: str, ref: str = None):
+def transition_manuscript_state(manu_id: str, action: str, ref: str = None, target_state: str = None):
     manu = read_one_manuscript(manu_id)
     if not manu:
         raise ValueError(f"No manuscript found with ID: {manu_id}")
 
     latest = manu[LATEST_VERSION]
 
-    # Initialize referees list if it doesn't exist (backward compatible)
     if REFEREES not in latest:
         latest[REFEREES] = []
 
+    kwargs = {
+        "manu": latest,
+        "ref": ref,
+        "target_state": target_state  # for EDITOR_MOVE
+    }
     new_state = query.handle_action(
         curr_state=latest[STATE],
         action=action,
-        manu=latest,
-        ref=ref
+        **kwargs
     )
 
     update_result = dbc.update(
