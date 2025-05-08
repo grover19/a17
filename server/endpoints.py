@@ -8,15 +8,21 @@ from http import HTTPStatus
 from flask import Flask, request
 from flask_restx import Resource, Api, fields  # Namespace
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager, create_access_token
 
 import werkzeug.exceptions as wz
 
 import data.people as ppl
 import data.text as txt
 import data.manuscripts.manuscripts as ms
+from data.auth import authenticate_user
 
 
 app = Flask(__name__)
+
+# Setup JWT
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change this to a secure secret key in production
+jwt = JWTManager(app)
 
 CORS(app)
 api = Api(app)
@@ -266,11 +272,12 @@ class Person(Resource):
 PEOPLE_CREATE_FLDS = api.model(
     "AddNewPeopleEntry",
     {
+        ppl.NAME: fields.String(required=True),
         ppl.EMAIL: fields.String(required=True),
-        "password": fields.String(required=True),
         ppl.AFFILIATION: fields.String(required=True),
         ppl.ROLES: fields.List(fields.String, required=True),
-    },
+        "password": fields.String(required=True, description="User's password - will be hashed before storage")
+    }
 )
 
 
@@ -290,20 +297,22 @@ class PeopleCreate(Resource):
         """
         try:
             data = request.get_json()
+            name = data.get(ppl.NAME, "").strip()
             email = data.get(ppl.EMAIL, "").strip()
             affiliation = data.get(ppl.AFFILIATION, "").strip()
+            password = data.get("password", "").strip()
             roles = data.get(ppl.ROLES, [])
             
-            # For now, we'll use email as the name since it's not provided in frontend
-            # You may want to extract name from email or modify frontend to send name
-            name = email
-            
             # Convert roles list to string (since backend expects a single role)
-            # You may want to modify the backend to handle multiple roles instead
             role = roles[0] if roles else None
             
-            ret = ppl.create(name, affiliation, email, role)
+            if not name or not email or not affiliation or not password or not role:
+                raise wz.BadRequest("Missing required fields")
+            
+            ret = ppl.create(name, affiliation, email, role, password)
             return {MESSAGE: "Person added!", RETURN: ret}, HTTPStatus.CREATED
+        except ValueError as err:
+            raise wz.BadRequest(str(err))
         except Exception as err:
             raise wz.NotAcceptable(f"Could not add person: {err=}")
 
@@ -466,6 +475,46 @@ class TextUpdate(Resource):
             }, HTTPStatus.OK
         except ValueError as e:
             raise wz.NotFound(str(e))
+
+
+# AUTH ENDPOINTS
+AUTH_EP = "/auth"
+AUTH_LOGIN_EP = f"{AUTH_EP}/login"
+
+LOGIN_FIELDS = api.model(
+    "Login",
+    {
+        "email": fields.String(required=True),
+        "password": fields.String(required=True),
+    }
+)
+
+@api.route(AUTH_LOGIN_EP)
+class Login(Resource):
+    """
+    Handle user login and token generation
+    """
+    @api.expect(LOGIN_FIELDS)
+    @api.response(HTTPStatus.OK, "Login successful")
+    @api.response(HTTPStatus.UNAUTHORIZED, "Invalid credentials")
+    def post(self):
+        """
+        Authenticate user and return JWT token
+        """
+        data = request.get_json()
+        email = data.get("email", "").strip()
+        password = data.get("password", "").strip()
+
+        if not email or not password:
+            raise wz.BadRequest("Email and password are required")
+
+        user = authenticate_user(email, password)
+        if not user:
+            raise wz.Unauthorized("Invalid email or password")
+
+        # Create access token
+        access_token = create_access_token(identity=email)
+        return {"token": access_token}, HTTPStatus.OK
 
 
 if __name__ == "__main__":

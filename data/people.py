@@ -5,19 +5,16 @@ import re
 
 import data.db_connect as dbc
 import data.roles as rls
+from data.auth import hash_password
+from data.models import (
+    NAME, EMAIL, ROLES, AFFILIATION, PASSWORD,
+    TEST_EMAIL, DEL_EMAIL
+)
 
 PEOPLE_COLLECT = 'people'
 
 # test commit message
 MIN_USER_NAME_LEN = 2
-# fields
-NAME = 'name'
-ROLES = 'roles'
-AFFILIATION = 'affiliation'
-EMAIL = 'email'
-
-TEST_EMAIL = 'ejc369@nyu.edu'
-DEL_EMAIL = 'delete@nyu.edu'
 
 client = dbc.connect_db()
 print(f'{client=}')
@@ -82,16 +79,26 @@ def is_valid_person(name: str, affiliation: str, email: str,
     return True
 
 
-def create(name: str, affiliation: str, email: str, role: str):
+def create(name: str, affiliation: str, email: str, role: str, password: str):
+    """
+    Create a new person with the given details.
+    Password is required and will be hashed before storage.
+    """
     if exists(email):
         raise ValueError(f'Adding duplicate {email=}')
+    if not password:
+        raise ValueError('Password is required')
     if is_valid_person(name, affiliation, email, role=role):
-        # im not even getting to this point
         roles = []
         if role:
             roles.append(role)
-        person = {NAME: name, AFFILIATION: affiliation,
-                  EMAIL: email, ROLES: roles}
+        person = {
+            NAME: name,
+            AFFILIATION: affiliation,
+            EMAIL: email,
+            ROLES: roles,
+            PASSWORD: hash_password(password)
+        }
         dbc.create(PEOPLE_COLLECT, person)
         return email
 
