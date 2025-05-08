@@ -236,7 +236,12 @@ class People(Resource):
         """
         Retrieve all journal people.
         """
-        return ppl.read()
+        people = ppl.read()
+        # Remove password fields from the response
+        for person in people.values():
+            if 'password' in person:
+                del person['password']
+        return people
 
 
 @api.route(PEOPLE_GET_EP)
