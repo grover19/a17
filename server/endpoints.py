@@ -266,10 +266,10 @@ class Person(Resource):
 PEOPLE_CREATE_FLDS = api.model(
     "AddNewPeopleEntry",
     {
-        ppl.NAME: fields.String,
-        ppl.EMAIL: fields.String,
-        ppl.AFFILIATION: fields.String,
-        ppl.ROLES: fields.String,
+        ppl.EMAIL: fields.String(required=True),
+        "password": fields.String(required=True),
+        ppl.AFFILIATION: fields.String(required=True),
+        ppl.ROLES: fields.List(fields.String, required=True),
     },
 )
 
@@ -280,22 +280,32 @@ class PeopleCreate(Resource):
     Add a person to the journal db.
     """
 
-    @api.response(HTTPStatus.OK, "Success")
+    @api.response(HTTPStatus.CREATED, "Person successfully created")
+    @api.response(HTTPStatus.BAD_REQUEST, "Invalid request data")
     @api.response(HTTPStatus.NOT_ACCEPTABLE, "Not acceptable")
     @api.expect(PEOPLE_CREATE_FLDS)
-    def put(self):
+    def post(self):
         """
         Add a journal person
         """
         try:
-            name = request.json.get(ppl.NAME)
-            affiliation = request.json.get(ppl.AFFILIATION)
-            email = request.json.get(ppl.EMAIL)
-            role = request.json.get(ppl.ROLES)
+            data = request.get_json()
+            email = data.get(ppl.EMAIL, "").strip()
+            affiliation = data.get(ppl.AFFILIATION, "").strip()
+            roles = data.get(ppl.ROLES, [])
+            
+            # For now, we'll use email as the name since it's not provided in frontend
+            # You may want to extract name from email or modify frontend to send name
+            name = email
+            
+            # Convert roles list to string (since backend expects a single role)
+            # You may want to modify the backend to handle multiple roles instead
+            role = roles[0] if roles else None
+            
             ret = ppl.create(name, affiliation, email, role)
+            return {MESSAGE: "Person added!", RETURN: ret}, HTTPStatus.CREATED
         except Exception as err:
             raise wz.NotAcceptable(f"Could not add person: {err=}")
-        return {MESSAGE: "Person added!", RETURN: ret}
 
 
 @api.route(PEOPLE_UPDATE_EP)
