@@ -295,7 +295,7 @@ class People(Resource):
         Retrieve all journal people.
         """
         try:
-            people = ppl.read()
+            people = ppl.read(include_id=True)
             print(f"People data from database: {people}")  # Debug print
 
             if not people:
@@ -329,14 +329,6 @@ class Person(Resource):
     @api.response(HTTPStatus.OK, "Person updated successfully")
     @api.response(HTTPStatus.NOT_FOUND, "Person not found")
     @api.response(HTTPStatus.BAD_REQUEST, "Invalid request data")
-    @api.expect(api.model(
-        "UpdatePerson",
-        {
-            ppl.NAME: fields.String(required=False),
-            ppl.AFFILIATION: fields.String(required=False),
-            ppl.ROLES: fields.List(fields.String, required=False),
-        }
-    ))
     def put(self, id):
         """
         Update a journal person by id.
@@ -346,9 +338,18 @@ class Person(Resource):
             raise wz.BadRequest("No data provided")
 
         try:
-            updated_person = ppl.update(id, data)
+            # Convert roles to array if it's a string
+            if 'roles' in data and isinstance(data['roles'], str):
+                data['roles'] = data['roles'].split(', ')
+            
+            # Validate the data has required fields
+            if not all(key in data for key in ['name', 'email', 'affiliation', 'roles']):
+                raise wz.BadRequest("Missing required fields")
+            
+            # Update the document with the new data
+            updated_person = ppl.replace_document(id, data)
             if updated_person:
-                return updated_person
+                return {"message": "Person updated successfully", "person": updated_person}
             raise wz.NotFound(f"No such person: {id}")
         except ValueError as e:
             raise wz.BadRequest(str(e))

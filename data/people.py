@@ -222,5 +222,42 @@ def delete_by_id(id_str):
         return None
 
 
+def replace_document(id_str, new_data):
+    """
+    Replace an entire person document with new data.
+    Returns the updated person record.
+    """
+    try:
+        obj_id = ObjectId(id_str)
+        
+        # Validate the new data
+        if is_valid_person(
+            new_data.get(NAME),
+            new_data.get(AFFILIATION),
+            new_data.get(EMAIL),
+            roles=new_data.get(ROLES)
+        ):
+            # Create update document (excluding _id if present)
+            update_data = {k: v for k, v in new_data.items() if k != '_id'}
+            
+            # Update the document
+            ret = dbc.update(
+                PEOPLE_COLLECT,
+                {'_id': obj_id},
+                update_data
+            )
+            
+            if ret and ret.modified_count > 0:
+                # Return the updated document
+                updated_doc = read_one_by_id(id_str)
+                if updated_doc and PASSWORD in updated_doc:
+                    del updated_doc[PASSWORD]
+                return updated_doc
+            return None
+            
+    except Exception as e:
+        raise ValueError(f'Error updating person: {str(e)}')
+
+
 if __name__ == '__main__':
     main()
