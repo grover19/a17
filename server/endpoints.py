@@ -169,6 +169,7 @@ class ManuscriptReceiveAction(Resource):
             "comment": manu.get("comment", "")
         }
 
+
 @api.route(f"{MANUSCRIPTS_EP}/author/<string:author_name>")
 class ManuscriptRetrieveByAuthor(Resource):
     @api.response(HTTPStatus.OK, "Manuscripts retrieved successfully")
@@ -188,6 +189,7 @@ class ManuscriptRetrieveByAuthor(Resource):
             )
 
         return manuscripts
+
 
 @api.route(MANUSCRIPTS_DEL_EP)
 class ManuscriptResource(Resource):
@@ -231,6 +233,7 @@ class ManuscriptResource(Resource):
         else:
             raise wz.NotFound(f"No manuscript found with ID {id}")
 
+
 @api.route(MANUSCRIPTS_EP)
 class ManuscriptRetrieveAll(Resource):
     """
@@ -244,6 +247,7 @@ class ManuscriptRetrieveAll(Resource):
         all_manu = ms.read_all_manuscripts()
         return all_manu
 
+
 @api.route(HELLO_EP)
 class HelloWorld(Resource):
     """
@@ -255,6 +259,7 @@ class HelloWorld(Resource):
         A trivial endpoint to see if the server is running.
         """
         return {HELLO_RESP: HELLO_RESP}
+
 
 @api.route(ENDPOINT_EP)
 class Endpoints(Resource):
@@ -269,10 +274,12 @@ class Endpoints(Resource):
         endpoints = sorted(rule.rule for rule in api.app.url_map.iter_rules())
         return {ENDPOINT_RESP: endpoints}
 
+
 # ENDPOINTS FOR PEOPLE
 PEOPLE_EP = "/people"
 PEOPLE_GET_EP = f"{PEOPLE_EP}/<id>"
 PEOPLE_CREATE_EP = f"{PEOPLE_EP}/create"
+
 
 @api.route(PEOPLE_EP)
 class People(Resource):
@@ -290,10 +297,12 @@ class People(Resource):
                 del person['password']
         return people
 
+
 @api.route(PEOPLE_GET_EP)
 class Person(Resource):
     """
-    This class handles reading, updating and deleting individual journal people.
+    This class handles reading, updating and
+    deleting individual journal people.
     """
     def get(self, id):
         """
@@ -342,6 +351,7 @@ class Person(Resource):
         else:
             raise wz.NotFound(f"No such record with id: {id}")
 
+
 PEOPLE_CREATE_FLDS = api.model(
     "AddNewPeopleEntry",
     {
@@ -355,6 +365,7 @@ PEOPLE_CREATE_FLDS = api.model(
         )
     }
 )
+
 
 @api.route(PEOPLE_CREATE_EP)
 class PeopleCreate(Resource):
@@ -376,16 +387,17 @@ class PeopleCreate(Resource):
             affiliation = data.get(ppl.AFFILIATION, "").strip()
             password = data.get("password", "").strip()
             roles = data.get(ppl.ROLES, [])
-            
-            # Convert roles list to string (since backend expects a single role)
+
+            # Convert roles list to string
+            # (since backend expects a single role)
             role = roles[0] if roles else None
-            
+
             person = ppl.create(name, affiliation, email, role, password)
-            
+
             # Remove password from response
             if person and 'password' in person:
                 del person['password']
-            
+
             return {
                 "message": "Person added!",
                 "person": person
@@ -393,11 +405,13 @@ class PeopleCreate(Resource):
         except ValueError as e:
             raise wz.NotAcceptable(str(e))
 
+
 # ENDPOINTS FOR TEXT
 TEXT_EP = "/text"
 TEXT_GET_EP = f"{TEXT_EP}/<string:key>"
 TEXT_CREATE_EP = f"{TEXT_EP}/create"
 TEXT_UPDATE_EP = f"{TEXT_EP}/update"
+
 
 @api.route(TEXT_EP)
 class TextRetrieveAll(Resource):
@@ -411,6 +425,7 @@ class TextRetrieveAll(Resource):
         """
         all_text = txt.read_all_texts()
         return all_text
+
 
 @api.route(TEXT_GET_EP)
 class TextResource(Resource):
@@ -438,10 +453,11 @@ class TextResource(Resource):
         """
         Delete a text entry by key.
         """
+
         try:
             deleted_key = txt.delete(key)
             return {
-                "message": f'Text entry with key "{deleted_key}" deleted successfully'
+                "message": f' "{deleted_key}" deleted successfully'
             }, HTTPStatus.OK
         except ValueError as e:
             return {'error': str(e)}, HTTPStatus.NOT_FOUND
