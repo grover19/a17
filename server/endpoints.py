@@ -37,7 +37,8 @@ MANUSCRIPTS_EP = "/manuscripts"
 MANUSCRIPTS_CREATE_EP = f"{MANUSCRIPTS_EP}/create"
 MANUSCRIPTS_GET_EP = f"{MANUSCRIPTS_EP}/<id>"
 MANUSCRIPTS_DEL_EP = f"{MANUSCRIPTS_EP}/<id>"
-MANUSCRIPTS_UPDATE_EP = f"{MANUSCRIPTS_EP}/update"  # for later use
+MANUSCRIPTS_UPDATE_EP = f"{MANUSCRIPTS_EP}/update"
+MANUSCRIPTS_RECEIVE_ACTION_EP = f"{MANUSCRIPTS_EP}/receive_action"
 
 MANUSCRIPT_CREATE_FLDS = api.model(
     "CreateManuscript",
@@ -48,6 +49,24 @@ MANUSCRIPT_CREATE_FLDS = api.model(
     },
 )
 
+MANUSCRIPT_UPDATE_FLDS = api.model(
+    "UpdateManuscript",
+    {
+        "id": fields.String(required=True),
+        "title": fields.String(required=True),
+        "text": fields.String(required=True),
+    },
+)
+
+MANUSCRIPT_RECEIVE_ACTION_FLDS = api.model(
+    "ReceiveActionManuscript",
+    {
+        "id": fields.String(required=True),
+        "action": fields.String(required=True),
+        "comment": fields.String(required=False),
+    },
+)
+
 @api.route(f"{MANUSCRIPTS_CREATE_EP}")
 class ManuscriptCreate(Resource):
     """
@@ -55,7 +74,7 @@ class ManuscriptCreate(Resource):
     """
     @api.expect(MANUSCRIPT_CREATE_FLDS)
     @api.response(HTTPStatus.CREATED, "Manuscript successfully created")
-    def put(self):
+    def post(self):
         """
         Create a manuscript.
         """
@@ -73,9 +92,75 @@ class ManuscriptCreate(Resource):
             raise wz.InternalServerError("Manuscript creation failed.")
 
         return {
+            "_id": str(manu["_id"]),
             "author": manu[ms.AUTHOR_NAME],
             "title": manu[ms.LATEST_VERSION][ms.TITLE],
             "text": manu[ms.LATEST_VERSION][ms.TEXT],
+        }, HTTPStatus.CREATED
+
+@api.route(MANUSCRIPTS_UPDATE_EP)
+class ManuscriptUpdate(Resource):
+    """
+    Update a manuscript.
+    """
+    @api.expect(MANUSCRIPT_UPDATE_FLDS)
+    @api.response(HTTPStatus.OK, "Manuscript successfully updated")
+    def put(self):
+        """
+        Update a manuscript's title and text.
+        """
+        data = request.get_json()
+        manuscript_id = data.get("id", "").strip()
+        title = data.get("title", "").strip()
+        text = data.get("text", "").strip()
+
+        if not manuscript_id or not title or not text:
+            raise wz.BadRequest("Missing one or more required fields")
+
+        manu = ms.update_manuscript(manuscript_id, title, text)
+        if not manu:
+            raise wz.NotFound(f"No manuscript found with id '{manuscript_id}'")
+
+        return {
+            "_id": str(manu["_id"]),
+            "author": manu[ms.AUTHOR_NAME],
+            "title": manu[ms.LATEST_VERSION][ms.TITLE],
+            "text": manu[ms.LATEST_VERSION][ms.TEXT],
+        }
+
+@api.route(MANUSCRIPTS_RECEIVE_ACTION_EP)
+class ManuscriptReceiveAction(Resource):
+    """
+    Handle manuscript actions (accept/reject/revise).
+    """
+    @api.expect(MANUSCRIPT_RECEIVE_ACTION_FLDS)
+    @api.response(HTTPStatus.OK, "Action processed successfully")
+    def put(self):
+        """
+        Process an action on a manuscript.
+        """
+        data = request.get_json()
+        manuscript_id = data.get("id", "").strip()
+        action = data.get("action", "").strip().lower()
+        comment = data.get("comment", "").strip()
+
+        if not manuscript_id or not action:
+            raise wz.BadRequest("Missing manuscript ID or action")
+
+        if action not in ["accept", "reject", "revise"]:
+            raise wz.BadRequest("Invalid action. Must be 'accept', 'reject', or 'revise'")
+
+        manu = ms.process_manuscript_action(manuscript_id, action, comment)
+        if not manu:
+            raise wz.NotFound(f"No manuscript found with id '{manuscript_id}'")
+
+        return {
+            "_id": str(manu["_id"]),
+            "author": manu[ms.AUTHOR_NAME],
+            "title": manu[ms.LATEST_VERSION][ms.TITLE],
+            "text": manu[ms.LATEST_VERSION][ms.TEXT],
+            "status": manu.get("status", "pending"),
+            "comment": manu.get("comment", "")
         }
 
 @api.route(f"{MANUSCRIPTS_EP}/author/<string:author_name>")
@@ -111,6 +196,7 @@ class ManuscriptResource(Resource):
             raise wz.NotFound(f"No manuscript found with id '{id}'.")
         latest_manu = manu["latest_version"]
         return {
+            "_id": str(manu["_id"]),
             "author": manu[ms.AUTHOR_NAME],
             "title": latest_manu[ms.TITLE],
             "text": latest_manu.get(ms.TEXT),
