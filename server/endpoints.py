@@ -297,13 +297,13 @@ class People(Resource):
         try:
             people = ppl.read()
             print(f"People data from database: {people}")  # Debug print
-            
+
             if not people:
                 print("No people found in database")  # Debug print
                 return {}
-                
+
             return people
-            
+
         except Exception as e:
             print(f"Error in /people endpoint: {str(e)}")  # Debug print
             return {'error': str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
@@ -344,7 +344,7 @@ class Person(Resource):
         data = request.get_json()
         if not data:
             raise wz.BadRequest("No data provided")
-            
+
         try:
             updated_person = ppl.update(id, data)
             if updated_person:
@@ -478,6 +478,7 @@ class TextResource(Resource):
         except Exception as e:
             return {'error': str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
+
 @api.route(TEXT_CREATE_EP)
 class TextCreate(Resource):
     """
@@ -505,6 +506,7 @@ class TextCreate(Resource):
             "text": text_doc["text"],
         }
 
+
 @api.route(TEXT_UPDATE_EP)
 class TextUpdate(Resource):
     @api.expect(api.model(
@@ -529,6 +531,7 @@ class TextUpdate(Resource):
         except ValueError as e:
             raise wz.NotFound(str(e))
 
+
 # AUTH ENDPOINTS
 AUTH_EP = "/auth"
 AUTH_LOGIN_EP = f"{AUTH_EP}/login"
@@ -540,6 +543,7 @@ LOGIN_FIELDS = api.model(
         "password": fields.String(required=True),
     }
 )
+
 
 @api.route(AUTH_LOGIN_EP)
 class Login(Resource):
@@ -567,6 +571,7 @@ class Login(Resource):
         # Create access token
         access_token = create_access_token(identity=email)
         return {"token": access_token}, HTTPStatus.OK
+
 
 if __name__ == "__main__":
     app.run(debug=True)
