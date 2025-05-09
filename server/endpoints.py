@@ -8,7 +8,7 @@ from http import HTTPStatus
 from flask import Flask, request
 from flask_restx import Resource, Api, fields  # Namespace
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 import werkzeug.exceptions as wz
 
@@ -24,6 +24,12 @@ app.config['JWT_SECRET_KEY'] = (
     'your-secret-key'  # Change this to a secure secret key in production
 )
 jwt = JWTManager(app)
+
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload):
+    print("Token check - Header:", jwt_header)
+    print("Token check - Payload:", jwt_payload)
+    return False
 
 CORS(app)
 api = Api(app)
@@ -75,12 +81,16 @@ class ManuscriptCreate(Resource):
     """
     Create a new manuscript entry.
     """
+    @jwt_required()
     @api.expect(MANUSCRIPT_CREATE_FLDS)
     @api.response(HTTPStatus.CREATED, "Manuscript successfully created")
     def post(self):
         """
         Create a manuscript.
         """
+        current_user = get_jwt_identity()
+        print("POST /manuscripts/create - Current user:", current_user)
+        
         data = request.get_json()
         author = data.get("author", "").strip()
         title = data.get("title", "").strip()
@@ -106,12 +116,16 @@ class ManuscriptUpdate(Resource):
     """
     Update a manuscript.
     """
+    @jwt_required()
     @api.expect(MANUSCRIPT_UPDATE_FLDS)
     @api.response(HTTPStatus.OK, "Manuscript successfully updated")
     def put(self):
         """
         Update a manuscript's title and text.
         """
+        current_user = get_jwt_identity()
+        print("PUT /manuscripts/update - Current user:", current_user)
+        
         data = request.get_json()
         manuscript_id = data.get("id", "").strip()
         title = data.get("title", "").strip()
@@ -137,12 +151,16 @@ class ManuscriptReceiveAction(Resource):
     """
     Handle manuscript actions (accept/reject/revise).
     """
+    @jwt_required()
     @api.expect(MANUSCRIPT_RECEIVE_ACTION_FLDS)
     @api.response(HTTPStatus.OK, "Action processed successfully")
     def put(self):
         """
         Process an action on a manuscript.
         """
+        current_user = get_jwt_identity()
+        print("PUT /manuscripts/receive_action - Current user:", current_user)
+        
         data = request.get_json()
         manuscript_id = data.get("id", "").strip()
         action = data.get("action", "").strip().lower()
@@ -171,6 +189,7 @@ class ManuscriptReceiveAction(Resource):
 
 @api.route(f"{MANUSCRIPTS_EP}/author/<string:author_name>")
 class ManuscriptRetrieveByAuthor(Resource):
+    @jwt_required()
     @api.response(HTTPStatus.OK, "Manuscripts retrieved successfully")
     @api.response(
         HTTPStatus.NOT_FOUND,
@@ -180,6 +199,9 @@ class ManuscriptRetrieveByAuthor(Resource):
         """
         Retrieve all manuscripts for the specified author name.
         """
+        current_user = get_jwt_identity()
+        print(f"GET /manuscripts/author/{author_name} - Current user:", current_user)
+        
         manuscripts = ms.read_manuscripts_by_author(author_name)
 
         if not manuscripts:
@@ -195,6 +217,7 @@ class ManuscriptResource(Resource):
     """
     GET and DELETE /manuscripts/{id}
     """
+    @jwt_required()
     @api.response(HTTPStatus.OK, "Manuscript retrieved successfully")
     @api.response(
         HTTPStatus.BAD_REQUEST,
@@ -205,6 +228,9 @@ class ManuscriptResource(Resource):
         """
         Retrieve a manuscript by ID.
         """
+        current_user = get_jwt_identity()
+        print(f"GET /manuscripts/{id} - Current user:", current_user)
+        
         id = id.strip()
         manu = ms.read_one_manuscript(id)
         if not manu:
@@ -217,12 +243,16 @@ class ManuscriptResource(Resource):
             "text": latest_manu.get(ms.TEXT),
         }
 
+    @jwt_required()
     @api.response(HTTPStatus.OK, "Manuscript successfully deleted")
     @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
     def delete(self, id):
         """
         Delete a manuscript by ID.
         """
+        current_user = get_jwt_identity()
+        print(f"DELETE /manuscripts/{id} - Current user:", current_user)
+        
         id = id.strip()
         result = ms.delete_manuscript(id)
         if result:
@@ -238,11 +268,15 @@ class ManuscriptRetrieveAll(Resource):
     """
     Retrieve all manuscript entries
     """
+    @jwt_required()
     @api.response(HTTPStatus.OK, "Manuscripts retrieved successfully")
     def get(self):
         """
         Retrieve all manuscripts
         """
+        current_user = get_jwt_identity()
+        print("GET /manuscripts - Current user:", current_user)
+        
         try:
             all_manu = ms.read_all_manuscripts()
             return all_manu
@@ -289,23 +323,28 @@ class People(Resource):
     This class handles creating, reading, updating
     and deleting journal people.
     """
+    @jwt_required()
     @api.response(HTTPStatus.OK, "Retrieved all people successfully")
     def get(self):
         """
         Retrieve all journal people.
         """
         try:
+            current_user = get_jwt_identity()
+            print("GET /people - Current user:", current_user)
+            print("GET /people - Request headers:", dict(request.headers))
+            
             people = ppl.read(include_id=True)
-            print(f"People data from database: {people}")  # Debug print
+            print(f"People data from database: {people}")
 
             if not people:
-                print("No people found in database")  # Debug print
+                print("No people found in database")
                 return {}
 
             return people
 
         except Exception as e:
-            print(f"Error in /people endpoint: {str(e)}")  # Debug print
+            print(f"Error in /people endpoint: {str(e)}")
             return {'error': str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
@@ -314,6 +353,7 @@ class Person(Resource):
     """
     This class handles reading, updating and deleting individual people.
     """
+    @jwt_required()
     @api.response(HTTPStatus.OK, "Person retrieved successfully")
     @api.response(HTTPStatus.NOT_FOUND, "Person not found")
     def get(self, id):
@@ -326,6 +366,7 @@ class Person(Resource):
         else:
             raise wz.NotFound(f"No such record: {id}")
 
+    @jwt_required()
     @api.response(HTTPStatus.OK, "Person updated successfully")
     @api.response(HTTPStatus.NOT_FOUND, "Person not found")
     @api.response(HTTPStatus.BAD_REQUEST, "Invalid request data")
@@ -354,6 +395,7 @@ class Person(Resource):
         except ValueError as e:
             raise wz.BadRequest(str(e))
 
+    @jwt_required()
     @api.response(HTTPStatus.OK, "Success")
     @api.response(HTTPStatus.NOT_FOUND, "No such person")
     def delete(self, id):
@@ -387,6 +429,7 @@ class PeopleCreate(Resource):
     """
     Add a person to the journal db.
     """
+    @jwt_required()
     @api.response(HTTPStatus.CREATED, "Person successfully created")
     @api.response(HTTPStatus.BAD_REQUEST, "Invalid request data")
     @api.response(HTTPStatus.NOT_ACCEPTABLE, "Not acceptable")
@@ -562,15 +605,19 @@ class Login(Resource):
         email = data.get("email", "").strip()
         password = data.get("password", "").strip()
 
+        print("Login attempt - Email:", email)
+
         if not email or not password:
             raise wz.BadRequest("Email and password are required")
 
         user = authenticate_user(email, password)
         if not user:
+            print("Login failed - Invalid credentials")
             raise wz.Unauthorized("Invalid email or password")
 
         # Create access token
         access_token = create_access_token(identity=email)
+        print("Login successful - Generated token:", access_token)
         return {"token": access_token}, HTTPStatus.OK
 
 
