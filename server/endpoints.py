@@ -106,6 +106,23 @@ class ManuscriptCreate(Resource):
             "text": manu[ms.LATEST_VERSION][ms.TEXT],
         }
 
+@api.route(f"{MANUSCRIPTS_EP}/author/<string:author_name>")
+class ManuscriptRetrieveByAuthor(Resource):
+
+
+    @api.response(HTTPStatus.OK, "Manuscripts retrieved successfully")
+    @api.response(HTTPStatus.NOT_FOUND, "No manuscripts found for the given author")
+    def get(self, author_name):
+        """
+        Retrieve all manuscripts for the specified author name.
+        """
+        manuscripts = ms.read_manuscripts_by_author(author_name)
+
+        if not manuscripts:
+            raise wz.NotFound(f"No manuscripts found for author '{author_name}'.")
+
+        return manuscripts
+
 
 @api.route(MANUSCRIPTS_GET_EP)
 class ManuscriptRetrieve(Resource):
