@@ -20,7 +20,9 @@ from data.auth import authenticate_user
 app = Flask(__name__)
 
 # Setup JWT
-app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change this to a secure secret key in production
+app.config['JWT_SECRET_KEY'] = (
+    'your-secret-key'  # Change this to a secure secret key in production
+)
 jwt = JWTManager(app)
 
 CORS(app)
@@ -67,6 +69,7 @@ MANUSCRIPT_RECEIVE_ACTION_FLDS = api.model(
     },
 )
 
+
 @api.route(f"{MANUSCRIPTS_CREATE_EP}")
 class ManuscriptCreate(Resource):
     """
@@ -98,6 +101,7 @@ class ManuscriptCreate(Resource):
             "text": manu[ms.LATEST_VERSION][ms.TEXT],
         }, HTTPStatus.CREATED
 
+
 @api.route(MANUSCRIPTS_UPDATE_EP)
 class ManuscriptUpdate(Resource):
     """
@@ -128,6 +132,7 @@ class ManuscriptUpdate(Resource):
             "text": manu[ms.LATEST_VERSION][ms.TEXT],
         }
 
+
 @api.route(MANUSCRIPTS_RECEIVE_ACTION_EP)
 class ManuscriptReceiveAction(Resource):
     """
@@ -148,7 +153,8 @@ class ManuscriptReceiveAction(Resource):
             raise wz.BadRequest("Missing manuscript ID or action")
 
         if action not in ["accept", "reject", "revise"]:
-            raise wz.BadRequest("Invalid action. Must be 'accept', 'reject', or 'revise'")
+            raise wz.BadRequest(
+                "Invalid action. Must be 'accept', 'reject', or 'revise'")
 
         manu = ms.process_manuscript_action(manuscript_id, action, comment)
         if not manu:
@@ -166,7 +172,10 @@ class ManuscriptReceiveAction(Resource):
 @api.route(f"{MANUSCRIPTS_EP}/author/<string:author_name>")
 class ManuscriptRetrieveByAuthor(Resource):
     @api.response(HTTPStatus.OK, "Manuscripts retrieved successfully")
-    @api.response(HTTPStatus.NOT_FOUND, "No manuscripts found for the given author")
+    @api.response(
+        HTTPStatus.NOT_FOUND,
+        "No manuscripts found for the given author"
+    )
     def get(self, author_name):
         """
         Retrieve all manuscripts for the specified author name.
@@ -174,7 +183,9 @@ class ManuscriptRetrieveByAuthor(Resource):
         manuscripts = ms.read_manuscripts_by_author(author_name)
 
         if not manuscripts:
-            raise wz.NotFound(f"No manuscripts found for author '{author_name}'.")
+            raise wz.NotFound(
+                f"No manuscripts found for author '{author_name}'"
+            )
 
         return manuscripts
 
@@ -184,7 +195,10 @@ class ManuscriptResource(Resource):
     GET and DELETE /manuscripts/{id}
     """
     @api.response(HTTPStatus.OK, "Manuscript retrieved successfully")
-    @api.response(HTTPStatus.BAD_REQUEST, "Missing or invalid manuscript id")
+    @api.response(
+        HTTPStatus.BAD_REQUEST,
+        "Missing or invalid manuscript id"
+    )
     @api.response(HTTPStatus.NOT_FOUND, "Manuscript not found")
     def get(self, id):
         """
@@ -307,7 +321,9 @@ class Person(Resource):
             raise wz.BadRequest("Invalid request: Missing or incorrect fields")
 
         try:
-            updated_person = ppl.update_by_id(id, name, affiliation, email, roles)
+            updated_person = ppl.update_by_id(
+                id, name, affiliation, email, roles
+            )
             if 'password' in updated_person:
                 del updated_person['password']
             return updated_person, HTTPStatus.OK
@@ -324,7 +340,7 @@ class Person(Resource):
         if ret is not None:
             return {"Deleted": ret}
         else:
-            raise wz.NotFound(f"No such person with id: {id}")
+            raise wz.NotFound(f"No such record with id: {id}")
 
 PEOPLE_CREATE_FLDS = api.model(
     "AddNewPeopleEntry",
@@ -333,7 +349,10 @@ PEOPLE_CREATE_FLDS = api.model(
         ppl.EMAIL: fields.String(required=True),
         ppl.AFFILIATION: fields.String(required=True),
         ppl.ROLES: fields.List(fields.String, required=True),
-        "password": fields.String(required=True, description="User's password - will be hashed before storage")
+        "password": fields.String(
+            required=True,
+            description="User's password - will be hashed before storage"
+        )
     }
 )
 
