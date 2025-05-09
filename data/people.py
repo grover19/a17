@@ -37,18 +37,30 @@ def read(include_id=False):
         - Optional include_id parameter to include MongoDB ObjectID in response
         - Returns a dictionary of users keyed on user email.
         - Each user email must be the key for another dictionary.
+        - Excludes password hashes from the response.
     """
     people = dbc.read_dict(PEOPLE_COLLECT, EMAIL, no_id=not include_id)
+    # Remove password field from each person's data
+    for person in people.values():
+        if PASSWORD in person:
+            del person[PASSWORD]
     print(f'{people=}')
     return people
 
 
-def read_one(email):
+def read_one(email, include_password=False):
     """
     Return a person record if email present in DB,
     else None.
+    Args:
+        email: The email to look up
+        include_password: Whether to include the password hash in the response
     """
-    return dbc.read_one(PEOPLE_COLLECT, {EMAIL: email})
+    person = dbc.read_one(PEOPLE_COLLECT, {EMAIL: email})
+    if person and not include_password:
+        if PASSWORD in person:
+            del person[PASSWORD]
+    return person
 
 
 def exists(email):
@@ -93,12 +105,18 @@ def create(name, affiliation, email, role, password):
         roles = []
         if role:
             roles.append(role)
+        
+        # Hash password and decode to string for storage
+        password_hash = hash_password(password)
+        if isinstance(password_hash, bytes):
+            password_hash = password_hash.decode('utf-8')
+            
         person = {
             NAME: name,
             AFFILIATION: affiliation,
             EMAIL: email,
             ROLES: roles,
-            PASSWORD: hash_password(password)
+            PASSWORD: password_hash
         }
         dbc.create(PEOPLE_COLLECT, person)
         # Return the full person object including ObjectId

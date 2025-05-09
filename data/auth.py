@@ -21,6 +21,7 @@ def authenticate_user(email: str, password: str) -> dict:
     Authenticate a user with email and password.
     Returns user data if authentication successful, None otherwise.
     """
+    # Get user with password hash included
     user = dbc.read_one(PEOPLE_COLLECT, {EMAIL: email})
     if not user:
         return None
@@ -28,11 +29,16 @@ def authenticate_user(email: str, password: str) -> dict:
     stored_hash = user.get(PASSWORD)
     if not stored_hash:
         return None
+    
+    # Convert stored_hash to bytes if it's a string
+    if isinstance(stored_hash, str):
+        stored_hash = stored_hash.encode('utf-8')
         
     if verify_password(password, stored_hash):
+        # Don't include the password hash in the return value
         return {
             EMAIL: user[EMAIL],
-            ROLES: user[ROLES]
+            ROLES: user.get(ROLES, [])  # Use get() with default empty list
         }
     
     return None 

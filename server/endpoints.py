@@ -90,7 +90,6 @@ class ManuscriptCreate(Resource):
             raise wz.BadRequest("Missing one or more required fields")
 
         manu = ms.create_manuscript(author, title, text)
-        print(manu)
         if not manu:
             raise wz.InternalServerError("Manuscript creation failed.")
 
@@ -244,8 +243,11 @@ class ManuscriptRetrieveAll(Resource):
         """
         Retrieve all manuscripts
         """
-        all_manu = ms.read_all_manuscripts()
-        return all_manu
+        try:
+            all_manu = ms.read_all_manuscripts()
+            return all_manu
+        except Exception as e:
+            return {'error': str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @api.route(HELLO_EP)
@@ -284,72 +286,84 @@ PEOPLE_CREATE_EP = f"{PEOPLE_EP}/create"
 @api.route(PEOPLE_EP)
 class People(Resource):
     """
-    This class handles retrieving all journal people.
+    This class handles creating, reading, updating
+    and deleting journal people.
     """
+    @api.response(HTTPStatus.OK, "Retrieved all people successfully")
     def get(self):
         """
         Retrieve all journal people.
         """
-        people = ppl.read(include_id=True)
-        # Remove password fields from the response but keep the ObjectID
-        for person in people.values():
-            if 'password' in person:
-                del person['password']
-        return people
+        try:
+            people = ppl.read()
+            print(f"People data from database: {people}")  # Debug print
+            
+            if not people:
+                print("No people found in database")  # Debug print
+                return {}
+                
+            return people
+            
+        except Exception as e:
+            print(f"Error in /people endpoint: {str(e)}")  # Debug print
+            return {'error': str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @api.route(PEOPLE_GET_EP)
 class Person(Resource):
     """
-    This class handles reading, updating and
-    deleting individual journal people.
+    This class handles reading, updating and deleting individual people.
     """
+    @api.response(HTTPStatus.OK, "Person retrieved successfully")
+    @api.response(HTTPStatus.NOT_FOUND, "Person not found")
     def get(self, id):
         """
-        Retrieve a journal person by ObjectId.
+        Retrieve a journal person by id.
         """
-        person = ppl.read_one_by_id(id)
+        person = ppl.read_one(id)
         if person:
-            if 'password' in person:
-                del person['password']
             return person
         else:
-            raise wz.NotFound(f"No such record with id: {id}")
+            raise wz.NotFound(f"No such record: {id}")
 
+    @api.response(HTTPStatus.OK, "Person updated successfully")
+    @api.response(HTTPStatus.NOT_FOUND, "Person not found")
+    @api.response(HTTPStatus.BAD_REQUEST, "Invalid request data")
+    @api.expect(api.model(
+        "UpdatePerson",
+        {
+            ppl.NAME: fields.String(required=False),
+            ppl.AFFILIATION: fields.String(required=False),
+            ppl.ROLES: fields.List(fields.String, required=False),
+        }
+    ))
     def put(self, id):
         """
-        Update a journal person by ObjectId.
+        Update a journal person by id.
         """
         data = request.get_json()
-        name = data.get(ppl.NAME)
-        affiliation = data.get(ppl.AFFILIATION)
-        email = data.get(ppl.EMAIL)
-        roles = data.get(ppl.ROLES)
-
-        if not (name and affiliation and email and isinstance(roles, list)):
-            raise wz.BadRequest("Invalid request: Missing or incorrect fields")
-
+        if not data:
+            raise wz.BadRequest("No data provided")
+            
         try:
-            updated_person = ppl.update_by_id(
-                id, name, affiliation, email, roles
-            )
-            if 'password' in updated_person:
-                del updated_person['password']
-            return updated_person, HTTPStatus.OK
-        except ValueError as err:
-            raise wz.NotFound(str(err))
+            updated_person = ppl.update(id, data)
+            if updated_person:
+                return updated_person
+            raise wz.NotFound(f"No such person: {id}")
+        except ValueError as e:
+            raise wz.BadRequest(str(e))
 
-    @api.response(HTTPStatus.OK, "Success.")
-    @api.response(HTTPStatus.NOT_FOUND, "No such person.")
+    @api.response(HTTPStatus.OK, "Success")
+    @api.response(HTTPStatus.NOT_FOUND, "No such person")
     def delete(self, id):
         """
-        Delete a journal person by ObjectId.
+        Delete a journal person by id.
         """
-        ret = ppl.delete_by_id(id)
+        ret = ppl.delete(id)
         if ret is not None:
             return {"Deleted": ret}
         else:
-            raise wz.NotFound(f"No such record with id: {id}")
+            raise wz.NotFound(f"No such person: {id}")
 
 
 PEOPLE_CREATE_FLDS = api.model(
