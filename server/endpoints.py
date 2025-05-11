@@ -273,7 +273,7 @@ class Person(Resource):
         """
         person = ppl.read_one_by_id(id)
         if person:
-            return person
+            return ppl.sanitize_user(person)
         else:
             raise wz.NotFound(f"No such record with ID: {id}")
 
@@ -323,7 +323,7 @@ class Person(Resource):
             updated_person = ppl.update_by_id(id, name, affiliation, email, roles)
             return {
                 "message": "Person updated successfully",
-                "person": updated_person
+                "person": ppl.sanitize_user(updated_person)
             }, HTTPStatus.OK
         except ValueError as err:
             raise wz.NotFound(str(err))
