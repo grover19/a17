@@ -236,7 +236,17 @@ class ManuscriptUpdate(Resource):
         if not result:
             raise wz.NotFound(f"No manuscript found with ID {manuscript_id}")
 
-        return result
+        # Format the response to ensure JSON serialization
+        formatted_result = {
+            "author": result[ms.AUTHOR_NAME],
+            "title": result[ms.LATEST_VERSION][ms.TITLE],
+            "text": result[ms.LATEST_VERSION][ms.TEXT],
+            "version": result[ms.LATEST_VERSION][ms.VERSION],
+            "state": result[ms.LATEST_VERSION][ms.STATE],
+            "created": result[ms.MANUSCRIPT_CREATED].isoformat() if result[ms.MANUSCRIPT_CREATED] else None
+        }
+        
+        return formatted_result
 
 # ENDPOINTS FOR PEOPLE
 PEOPLE_EP = "/people"
