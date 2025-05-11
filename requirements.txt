@@ -4,3 +4,5 @@ flask_cors
 pymongo
 werkzeug==3.0.6
 pymongo
+bcrypt
+flask_JWT_extended
