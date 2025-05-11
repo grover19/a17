@@ -2,22 +2,20 @@
 This module interfaces to our user data.
 """
 import re
+from bson import ObjectId
 
 import data.db_connect as dbc
 import data.roles as rls
+from data.auth import hash_password
+from data.models import (
+    NAME, EMAIL, ROLES, AFFILIATION, PASSWORD,
+    TEST_EMAIL, DEL_EMAIL
+)
 
 PEOPLE_COLLECT = 'people'
 
 # test commit message
 MIN_USER_NAME_LEN = 2
-# fields
-NAME = 'name'
-ROLES = 'roles'
-AFFILIATION = 'affiliation'
-EMAIL = 'email'
-
-TEST_EMAIL = 'ejc369@nyu.edu'
-DEL_EMAIL = 'delete@nyu.edu'
 
 client = dbc.connect_db()
 print(f'{client=}')
@@ -26,26 +24,26 @@ CHAR_OR_DIGIT = '[A-Za-z0-9]'
 VALID_CHARS = '[A-Za-z0-9_.]'
 
 
-def is_valid_email(email: str) -> bool:
+def is_valid_email(email):
     return re.fullmatch(f"{VALID_CHARS}+@{CHAR_OR_DIGIT}+"
                         + "\\."
                         + f"{CHAR_OR_DIGIT}"
                         + "{2,3}", email)
 
 
-def read() -> dict:
+def read(include_id=False):
     """
     Our contract:
-        - No arguments.
+        - Optional include_id parameter to include MongoDB ObjectID in response
         - Returns a dictionary of users keyed on user email.
         - Each user email must be the key for another dictionary.
     """
-    people = dbc.read_dict(PEOPLE_COLLECT, EMAIL)
+    people = dbc.read_dict(PEOPLE_COLLECT, EMAIL, no_id=not include_id)
     print(f'{people=}')
     return people
 
 
-def read_one(email: str) -> dict:
+def read_one(email):
     """
     Return a person record if email present in DB,
     else None.
@@ -53,11 +51,11 @@ def read_one(email: str) -> dict:
     return dbc.read_one(PEOPLE_COLLECT, {EMAIL: email})
 
 
-def exists(email: str) -> bool:
+def exists(email):
     return read_one(email) is not None
 
 
-def delete(email: str):
+def delete(email):
     print(f'{EMAIL=}, {email=}')
     deleted_count = dbc.delete(PEOPLE_COLLECT, {EMAIL: email})
     if deleted_count == 1:
@@ -66,8 +64,7 @@ def delete(email: str):
         return None
 
 
-def is_valid_person(name: str, affiliation: str, email: str,
-                    role: str = None, roles: list = None) -> bool:
+def is_valid_person(name, affiliation, email, role = None, roles = None):
     if not is_valid_email(email):
         raise ValueError(f'Invalid email: {email}')
 
@@ -82,21 +79,33 @@ def is_valid_person(name: str, affiliation: str, email: str,
     return True
 
 
-def create(name: str, affiliation: str, email: str, role: str):
+def create(name, affiliation, email, role, password):
+    """
+    Create a new person with the given details.
+    Password is required and will be hashed before storage.
+    Returns the created person object including ObjectId.
+    """
     if exists(email):
         raise ValueError(f'Adding duplicate {email=}')
+    if not password:
+        raise ValueError('Password is required')
     if is_valid_person(name, affiliation, email, role=role):
-        # im not even getting to this point
         roles = []
         if role:
             roles.append(role)
-        person = {NAME: name, AFFILIATION: affiliation,
-                  EMAIL: email, ROLES: roles}
+        person = {
+            NAME: name,
+            AFFILIATION: affiliation,
+            EMAIL: email,
+            ROLES: roles,
+            PASSWORD: hash_password(password)
+        }
         dbc.create(PEOPLE_COLLECT, person)
-        return email
+        # Return the full person object including ObjectId
+        return read_one(email)
 
 
-def update(name: str, affiliation: str, email: str, roles: list):
+def update(name, affiliation, email, roles):
     if not exists(email):
         raise ValueError(f'Updating non-existent person: {email=}')
     if is_valid_person(name, affiliation, email, roles=roles):
@@ -108,7 +117,7 @@ def update(name: str, affiliation: str, email: str, roles: list):
         return email
 
 
-def has_role(person: dict, role: str) -> bool:
+def has_role(person, role):
     if role in person.get(ROLES):
         return True
     return False
@@ -117,18 +126,18 @@ def has_role(person: dict, role: str) -> bool:
 MH_FIELDS = [NAME, AFFILIATION]
 
 
-def get_mh_fields(journal_code=None) -> list:
+def get_mh_fields(journal_code=None):
     return MH_FIELDS
 
 
-def create_mh_rec(person: dict) -> dict:
+def create_mh_rec(person):
     mh_rec = {}
     for field in get_mh_fields():
         mh_rec[field] = person.get(field, '')
     return mh_rec
 
 
-def get_masthead() -> dict:
+def get_masthead():
     masthead = {}
     mh_roles = rls.get_masthead_roles()
     for mh_role, text in mh_roles.items():
@@ -144,6 +153,76 @@ def get_masthead() -> dict:
 
 def main():
     print(get_masthead())
+
+
+def read_one_by_id(id_str):
+    """
+    Return a person record if ObjectId is present in DB,
+    else None.
+    """
+    try:
+        obj_id = ObjectId(id_str)
+        return dbc.read_one(PEOPLE_COLLECT, {'_id': obj_id})
+    except:
+        return None
+
+
+def update_by_id(id_str, name, affiliation, email, roles):
+    """
+    Update a person by their ObjectId.
+    Returns the updated person record.
+    """
+    try:
+        obj_id = ObjectId(id_str)
+        if not dbc.read_one(PEOPLE_COLLECT, {'_id': obj_id}):
+            raise ValueError(f'Updating non-existent person with id: {id_str}')
+        
+        if is_valid_person(name, affiliation, email, roles=roles):
+            ret = dbc.update(PEOPLE_COLLECT,
+                           {'_id': obj_id},
+                           {NAME: name, AFFILIATION: affiliation,
+                            EMAIL: email, ROLES: roles})
+            print(f'{ret=}')
+            return read_one_by_id(id_str)
+    except Exception as e:
+        raise ValueError(f'Error updating person: {str(e)}')
+
+
+def delete_by_id(id_str):
+    """
+    Delete a person by their ObjectId.
+    Returns the id of the deleted person if successful, None otherwise.
+    """
+    try:
+        obj_id = ObjectId(id_str)
+        deleted_count = dbc.delete(PEOPLE_COLLECT, {'_id': obj_id})
+        if deleted_count == 1:
+            return id_str
+        else:
+            return None
+    except:
+        return None
+
+
+def sanitize_user(user):
+    """
+    Remove sensitive information from user data before sending to client.
+    Returns a copy of the user data with sensitive fields removed.
+    """
+    if not user:
+        return None
+    
+    # Create a copy of the user data
+    sanitized = user.copy()
+    
+    # Remove sensitive fields
+    sanitized.pop(PASSWORD, None)  # Remove password hash
+    
+    # Convert ObjectId to string if present
+    if '_id' in sanitized:
+        sanitized['_id'] = str(sanitized['_id'])
+    
+    return sanitized
 
 
 if __name__ == '__main__':

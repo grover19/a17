@@ -4,6 +4,8 @@ import  data.manuscripts.states as states
 import data.people as ppl
 from bson.objectid import ObjectId
 from copy import deepcopy
+from . import query
+
 
 
 
@@ -24,6 +26,8 @@ VERSION = 'version'
 TEXT = 'text'
 EDITORS = 'editors'
 EDITOR_COMMENTS = 'editor_comments'
+REFEREES = 'referees'
+
 
 
 # --- EDITORS --- #
@@ -153,6 +157,9 @@ def delete_manuscript_history(his_id):
     his_id = ObjectId(his_id)
     return dbc.delete(MANUSCRIPT_HISTORY_COLLECT, {MONGO_ID: his_id})
 
+def read_manuscripts_by_author(author_name: str) -> list:
+    return dbc.read_one(MANUSCRIPTS_COLLECT, {'author': author_name})
+
 
 def delete_manuscript(manu_id):
 
@@ -162,6 +169,7 @@ def delete_manuscript(manu_id):
     if not manu:
         return False
     his_id = manu[MANUSCRIPT_HISTORY_FK]
+
 
     # trigger
     his_delete = delete_manuscript_history(his_id)
@@ -174,3 +182,163 @@ def delete_manuscript(manu_id):
 def read_one_manuscript_history(his_id) -> dict:
     his_obj_id = create_mongo_id_object(his_obj_id)
     return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {MONGO_ID: his_obj_id})
+
+
+def read_manuscripts_by_author(author_name): 
+    return dbc.read_one(MANUSCRIPT_HISTORY_COLLECT, {'author': author_name})
+
+
+# --- Manuscript States ---
+ACCEPTED = 'accepted'
+REJECTED = 'rejected'
+PENDING_REVISION = 'pending_revision'
+PENDING = 'pending'
+
+
+def process_manuscript_action(manuscript_id, action, comment=None):
+    """
+    Process an action on a manuscript (accept/reject/revise)
+    Args:
+        manuscript_id: ID of the manuscript
+        action: The action to perform (accept/reject/revise)
+        comment: Optional comment for the action
+    Returns:
+        Updated manuscript document or None if not found
+    """
+    try:
+        manu_id = create_mongo_id_object(manuscript_id)
+        manuscript = read_one_manuscript(manu_id)
+        
+        if not manuscript:
+            return None
+            
+        # Create a new version based on the latest version
+        new_version = deepcopy(manuscript[LATEST_VERSION])
+        
+        # Update the state based on the action
+        if action == "accept":
+            new_version[STATE] = ACCEPTED
+        elif action == "reject":
+            new_version[STATE] = REJECTED
+        elif action == "revise":
+            new_version[STATE] = PENDING_REVISION
+        else:
+            return None
+            
+        # Add the comment if provided
+        if comment:
+            new_version[EDITOR_COMMENTS] = {
+                'timestamp': get_est_time(),
+                'comment': comment
+            }
+            
+        # Update the manuscript with the new version
+        update_dict = {
+            LATEST_VERSION: new_version
+        }
+        
+        result = dbc.update(
+            MANUSCRIPTS_COLLECT,
+            {MONGO_ID: manu_id},
+            update_dict
+        )
+        
+        if not result.acknowledged:
+            return None
+            
+        return read_one_manuscript(manu_id)
+        
+    except Exception as e:
+        print(f"Error processing manuscript action: {str(e)}")
+        return None
+
+
+def update_manuscript(manuscript_id, title, text):
+    """
+    Update a manuscript's title and text
+    Args:
+        manuscript_id: ID of the manuscript to update
+        title: New title for the manuscript
+        text: New text content for the manuscript
+    Returns:
+        Updated manuscript document or None if not found
+    """
+    try:
+        manu_id = create_mongo_id_object(manuscript_id)
+        manuscript = read_one_manuscript(manu_id)
+        
+        if not manuscript:
+            return None
+            
+        # Create a new version based on the latest version
+        new_version = deepcopy(manuscript[LATEST_VERSION])
+        new_version[TITLE] = title
+        new_version[TEXT] = text
+        new_version[VERSION] = new_version[VERSION] + 1
+        
+        # Store the previous version in history first
+        history_result = dbc.update(
+            MANUSCRIPT_HISTORY_COLLECT,
+            {MONGO_ID: manuscript[MANUSCRIPT_HISTORY_FK]},
+            {HISTORY: manuscript[LATEST_VERSION]}
+        )
+        
+        if not history_result.acknowledged:
+            return None
+            
+        # Then update the manuscript with the new version
+        result = dbc.update(
+            MANUSCRIPTS_COLLECT,
+            {MONGO_ID: manu_id},
+            {LATEST_VERSION: new_version}
+        )
+        
+        if not result.acknowledged:
+            return None
+            
+        return read_one_manuscript(manu_id)
+        
+    except Exception as e:
+        print(f"Error updating manuscript: {str(e)}")
+        return None
+
+def transition_manuscript_state(manu_id: str, action: str, ref: str = None, target_state: str = None):
+    manu = read_one_manuscript(manu_id)
+    if not manu:
+        raise ValueError(f"No manuscript found with ID: {manu_id}")
+
+    latest = manu[LATEST_VERSION]
+
+    if REFEREES not in latest:
+        latest[REFEREES] = []
+
+    kwargs = {
+        "manu": latest,
+        "ref": ref,
+        "target_state": target_state  # for EDITOR_MOVE
+    }
+    new_state = query.handle_action(
+        curr_state=latest[STATE],
+        action=action,
+        **kwargs
+    )
+
+    update_result = dbc.update(
+        MANUSCRIPTS_COLLECT,
+        {MONGO_ID: ObjectId(manu_id)},
+        {
+            f"{LATEST_VERSION}.{STATE}": new_state,
+            f"{LATEST_VERSION}.{EDITORS}": latest.get(EDITORS, {}),
+            f"{LATEST_VERSION}.{EDITOR_COMMENTS}": latest.get(EDITOR_COMMENTS, {}),
+            f"{LATEST_VERSION}.{REFEREES}": latest.get(REFEREES, [])
+        }
+    )
+
+    if not update_result.acknowledged:
+        raise Exception(f"Failed to update manuscript {manu_id} to state {new_state}")
+
+    return new_state
+
+
+def get_valid_actions(curr_state: str) -> list:
+    return query.get_valid_actions_by_state(curr_state)
