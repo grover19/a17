@@ -428,6 +428,19 @@ class PeopleUpdate(Resource):
         except ValueError as err:
             raise wz.NotFound(str(err))
 
+@api.route('/people/email/<string:email>')
+class PersonByEmail(Resource):
+    @jwt_required()
+    def get(self, email):
+        """
+        Retrieve a journal person by email.
+        """
+        user = ppl.read_one(email)
+        if user:
+            return ppl.sanitize_user(user)
+        else:
+            raise wz.NotFound(f"No user found with email: {email}")
+
 # AUTH ENDPOINTS
 AUTH_EP = "/auth"
 AUTH_LOGIN_EP = f"{AUTH_EP}/login"
